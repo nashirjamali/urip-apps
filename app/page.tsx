@@ -186,7 +186,7 @@ export default function SynthFiLandingPage() {
               onClick={() => scrollToSection("how-it-works")}
               className="text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-bg-secondary/30 rounded-md px-3 py-2 transition-colors relative group"
             >
-              Platform
+              How It Works
               <span className="absolute bottom-0 left-0 w-full h-0.5 bg-dark-glow-blue scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
             </button>
             <button
@@ -200,7 +200,7 @@ export default function SynthFiLandingPage() {
               onClick={() => scrollToSection("faq")}
               className="text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-bg-secondary/30 rounded-md px-3 py-2 transition-colors relative group"
             >
-              Blog
+              Faq
               <span className="absolute bottom-0 left-0 w-full h-0.5 bg-dark-glow-blue scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
             </button>
           </nav>
@@ -208,7 +208,7 @@ export default function SynthFiLandingPage() {
             variant="outline"
             className="border border-dark-glow-blue text-dark-glow-blue hover:bg-dark-glow-blue/10 px-6 py-2 rounded-lg bg-transparent"
           >
-            Contact Us
+            Connect Wallet
           </Button>
         </div>
       </header>
@@ -543,38 +543,41 @@ export default function SynthFiLandingPage() {
 
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Side - Trust Metrics */}
-            <div className="space-y-8">
-              <Card className="bg-gradient-to-r from-primary-green/20 to-primary-blue/20 backdrop-blur-md border border-dark-border shadow-xl rounded-2xl">
-                <CardContent className="p-8">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-dark-text-primary mb-2">
-                        ${platformData.stats.totalValueLocked}M+
-                      </div>
-                      <div className="text-dark-text-secondary font-medium">Total Value Locked</div>
+            <Card className="bg-dark-bg-secondary border border-dark-border shadow-lg rounded-2xl hover:shadow-xl transition-all duration-300 group">
+              {/* Tambahkan div overlay untuk pola */}
+              <div
+                className="absolute inset-0 z-0 opacity-10"
+                style={{ backgroundImage: 'url("/images/futuristic-pattern.png")' }}
+              ></div>
+              <CardContent className="p-8 relative z-10">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-dark-text-primary mb-2">
+                      ${platformData.stats.totalValueLocked}M+
                     </div>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-dark-text-primary mb-2">
-                        {platformData.stats.smartContractAudits}
-                      </div>
-                      <div className="text-dark-text-secondary font-medium">Smart Contract Audits</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-dark-text-primary mb-2">
-                        {platformData.stats.activeUsers.toLocaleString()}
-                      </div>
-                      <div className="text-dark-text-secondary font-medium">Active Users</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-dark-text-primary mb-2">
-                        {platformData.stats.securityIncidents}
-                      </div>
-                      <div className="text-dark-text-secondary font-medium">Security Incidents</div>
-                    </div>
+                    <div className="text-dark-text-secondary font-medium">Total Value Locked</div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-dark-text-primary mb-2">
+                      {platformData.stats.smartContractAudits}
+                    </div>
+                    <div className="text-dark-text-secondary font-medium">Smart Contract Audits</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-dark-text-primary mb-2">
+                      {platformData.stats.activeUsers.toLocaleString()}
+                    </div>
+                    <div className="text-dark-text-secondary font-medium">Active Users</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-dark-text-primary mb-2">
+                      {platformData.stats.securityIncidents}
+                    </div>
+                    <div className="text-dark-text-secondary font-medium">Security Incidents</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Right Side - Security Features */}
             <div className="grid md:grid-cols-2 gap-6">

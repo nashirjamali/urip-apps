@@ -68,12 +68,15 @@ const config: Config = {
         "dark-bg-primary": "#0A0A23", // Deep dark blue
         "dark-bg-secondary": "#1A1A3A", // Slightly lighter dark blue for cards
         "dark-text-primary": "#FFFFFF", // White text
-        "dark-text-secondary": "#A0A0C0", // Muted light text
+        "dark-text-secondary": "#9090B0", // Updated: Muted purplish-gray text for labels
         "dark-accent-blue": "#6A5ACD", // Medium purple-blue for buttons/accents
         "dark-accent-purple": "#8A2BE2", // Brighter purple for highlights
         "dark-glow-blue": "#4A90E2", // Vibrant blue for glowing effects
         "dark-border": "#303060", // Darker border
         "dark-input": "#202040", // Darker input background
+        // New colors for the specific card gradient
+        "card-gradient-start": "#A0F0E0", // Light greenish-blue from screenshot
+        "card-gradient-end": "#B0C0F0",   // Light purplish-blue from screenshot
       },
       borderRadius: {
         lg: "var(--radius)",
