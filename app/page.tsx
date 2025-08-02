@@ -14,6 +14,7 @@ import HeroSection from "@/components/partials/LandingPage/HeroSection";
 import LiskSection from "@/components/partials/LandingPage/LiskSection";
 import ProblemSection from "@/components/partials/LandingPage/ProblemSection";
 import TrackInvestment from "@/components/partials/LandingPage/TrackInvestment";
+import CoreFeatureSection from "@/components/partials/LandingPage/CoreFeatureSection";
 
 export default function HomePage() {
   return (
@@ -25,86 +26,7 @@ export default function HomePage() {
         <LiskSection />
         <ProblemSection />
         <TrackInvestment />
-
-        {/* Core Features */}
-        <section
-          id="features"
-          className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-[#F77A0E]"
-        >
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="text-center space-y-4 mb-12">
-              <h2 className="text-3xl font-bold tracking-tighter text-black">
-                URIP Core Features
-              </h2>
-              <p className="mx-auto max-w-[600px] text-black md:text-lg">
-                Platform combining blockchain security with traditional finance
-                ease
-              </p>
-            </div>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="text-center border-2 border-[#F77A0E] bg-white">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
-                    <Shield className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-black">High Security</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-black text-sm">
-                    Tested smart contracts and trusted custody to protect
-                    investor assets
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="text-center border-2 border-[#F77A0E] bg-white">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
-                    <Eye className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-black">
-                    Full Transparency
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-black text-sm">
-                    Complete visibility in asset management and fund management
-                    decisions
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="text-center border-2 border-[#F77A0E] bg-white">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
-                    <Zap className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-black">
-                    Instant Settlement
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-black text-sm">
-                    Blockchain-based settlement replacing traditional T+2 or T+3
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="text-center border-2 border-[#F77A0E] bg-white">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-black">
-                    Community Governance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-black text-sm">
-                    Democratic fund management decisions through DAO governance
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
+        <CoreFeatureSection />
 
         {/* Vision & Mission */}
         <section
