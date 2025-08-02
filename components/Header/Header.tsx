@@ -28,14 +28,14 @@ const NavItems: NavItem[] = [
 
 export default function Header() {
   return (
-    <nav className="fixed top-4 left-4 right-4 z-50 w-auto mx-auto max-w-7xl py-3 px-6 rounded-2xl backdrop-filter backdrop-blur-2xl bg-white/20 border border-white/30 shadow-2xl shadow-black/10 hover:shadow-black/15 transition-all duration-300 hover:bg-white/25">
+    <nav className="fixed top-4 left-4 right-4 z-50 w-auto mx-auto max-w-7xl py-3 px-6 rounded-2xl backdrop-filter backdrop-blur-2xl bg-black/20 border border-white/20 shadow-2xl shadow-black/10 hover:shadow-black/15 transition-all duration-300 hover:bg-black/30">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Link href="#" className="flex items-center space-x-2 font-semibold">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">U</span>
             </div>
-            <span className="text-lg font-bold text-gray-800 hover:text-gray-600 transition-colors">
+            <span className="text-lg font-bold text-white hover:text-gray-300 transition-colors">
               URIP
             </span>
           </Link>
@@ -45,24 +45,24 @@ export default function Header() {
             <Link
               key={href}
               href={href}
-              className="font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200 relative group"
+              className="font-medium text-gray-300 hover:text-white transition-colors duration-200 relative group"
             >
               {label}
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gray-800 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></span>
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></span>
             </Link>
           ))}
         </div>
         <div className="flex items-center space-x-3">
           <Link
             href="#"
-            className="flex items-center space-x-2 rounded-xl hover:bg-white/30 px-4 py-2 transition-all duration-200 text-gray-700 hover:text-gray-900 backdrop-filter backdrop-blur-sm"
+            className="flex items-center space-x-2 rounded-xl hover:bg-white/20 px-4 py-2 transition-all duration-200 text-gray-300 hover:text-white backdrop-filter backdrop-blur-sm"
           >
             <span className="text-sm font-medium">Login</span>
           </Link>
           <Button
             variant="outline"
             size="sm"
-            className="border-white/40 text-gray-700 hover:bg-white/40 hover:text-gray-900 backdrop-filter backdrop-blur-sm bg-white/30 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"
+            className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"
           >
             Register
           </Button>

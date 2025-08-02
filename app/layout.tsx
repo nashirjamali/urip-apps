@@ -9,9 +9,8 @@ import { LanguageProvider } from '../providers/LanguageProvider';
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Zap",
-  description: "Zap mobile application",
-  generator: 'v0.dev'
+  title: "URIP",
+  description: "URIP - Bridges traditional finance and DeF",
 }
 
 export default function RootLayout({

@@ -7,43 +7,101 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Shield, Users, Zap, Eye, Coins } from "lucide-react";
+import {
+  ArrowRight,
+  Shield,
+  Users,
+  Zap,
+  Eye,
+  Coins,
+  Code,
+  Layers,
+  Network,
+} from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/Header/Header";
+import Aurora from "@/components/Aurora/Aurora";
+import BlurText from "@/components/BlurText/BlurText";
+import SpotlightCard from "@/components/SpotlightCard/SpotlightCard";
+import CountUp from "@/components/CountUp/CountUp";
+import { ShinyButton } from "@/components/ShinyButton/ShinyButton";
+
+const stats = [
+  {
+    value: "$100M+",
+    label: "Target Total Value Locked",
+  },
+  {
+    value: "500+",
+    label: "Supported Traditional Assets",
+  },
+  {
+    value: "100K+",
+    label: "Target Active Users",
+  },
+];
 
 const HeroSection = () => (
-  <section className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-black">
-    <div className="container px-4 md:px-6 mx-auto">
-      <div className="flex flex-col items-center space-y-4 text-center">
-        <Badge className="bg-white text-black border-2 border-black px-4 py-1">
-          Leading DeFi Platform for Traditional Assets
-        </Badge>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-black">
-            Democratizing Global Investment with{" "}
-            <span className="underline">Blockchain</span>
-          </h1>
-          <p className="mx-auto max-w-[700px] text-black md:text-xl">
-            URIP bridges traditional finance and DeFi, providing easy,
-            transparent, and cost-effective global investment access to
-            everyone.
-          </p>
-        </div>
-        <div className="space-x-4">
-          <Button className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-lg border-2 border-black">
-            Start Investing
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            className="border-2 border-black text-black hover:bg-gray-100 px-8 py-3 text-lg bg-white"
-          >
-            Learn More
-          </Button>
-        </div>
-      </div>
+  <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="absolute w-screen h-screen">
+      <Aurora colorStops={["#F77A0E", "#FF94B4", "#FF3232"]} />
     </div>
-  </section>
+
+    {/* Content Container */}
+    <div className="relative z-10 pt-32">
+      {/* Hero Section */}
+      <section className="w-full py-12 md:py-24 lg:py-32">
+        <div className="container px-4 md:px-6 mx-auto">
+          <div className="flex flex-col items-center space-y-6 text-center">
+            <Badge className="bg-white/10 text-white border border-white/20 px-6 py-2 backdrop-blur-sm">
+              Leading DeFi Platform for Traditional Assets
+            </Badge>
+            <div className="space-y-8">
+              <BlurText
+                text="Democratizing Global Investment with Blockchain"
+                className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-white"
+              />
+              <p className="mx-auto max-w-[700px] text-gray-300 md:text-xl leading-relaxed">
+                URIP bridges traditional finance and DeFi, providing easy,
+                transparent, and cost-effective global investment access to
+                everyone.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              <Button
+                variant="outline"
+                className="border-2 border-white/30 text-white hover:bg-white/10 px-8 py-3 text-lg bg-transparent rounded-xl backdrop-blur-sm transition-all duration-300"
+              >
+                Start Investing
+              </Button>
+              <Button
+                variant="outline"
+                className="border-2 border-white/30 text-white hover:bg-white/10 px-8 py-3 text-lg bg-transparent rounded-xl backdrop-blur-sm transition-all duration-300"
+              >
+                Learn More
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="w-full py-12 md:py-24 lg:py-32">
+        <div className="container px-4 md:px-6 mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            {stats.map((stat, index) => (
+              <SpotlightCard key={index}>
+                <div className="text-4xl font-bold text-[#F77A0E]">{stat.value}</div>
+                <div className="text-sm text-gray-300 font-medium">
+                  {stat.label}
+                </div>
+              </SpotlightCard>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
 );
 
 export default function HomePage() {
@@ -55,28 +113,107 @@ export default function HomePage() {
         {/* Hero Section */}
         <HeroSection />
 
-        {/* Statistics Section */}
+        {/* Lisk Integration Section */}
         <section
-          id="stats"
-          className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 border-b-2 border-black"
+          id="lisk"
+          className="w-full py-12 md:py-24 lg:py-32 bg-[#F77A0E] text-white border-b-2 border-[#F77A0E]"
         >
           <div className="container px-4 md:px-6 mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-              <div className="space-y-2 p-6 border-2 border-black bg-white">
-                <div className="text-4xl font-bold text-black">$100M+</div>
-                <div className="text-sm text-black">
-                  Target Total Value Locked
+            <div className="text-center space-y-4 mb-12">
+              <Badge className="bg-white text-[#F77A0E] border-2 border-white">
+                Powered by Lisk
+              </Badge>
+              <h2 className="text-3xl font-bold tracking-tighter text-white">
+                Built on Lisk's Layer 2 Infrastructure
+              </h2>
+              <p className="mx-auto max-w-[700px] text-white md:text-lg opacity-90">
+                URIP leverages Lisk's advanced blockchain technology to provide
+                seamless, scalable, and developer-friendly DeFi solutions
+              </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <Card className="border-2 border-white bg-white/10 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-white rounded-sm flex items-center justify-center mb-4">
+                    <Code className="h-6 w-6 text-[#F77A0E]" />
+                  </div>
+                  <CardTitle className="text-white">JavaScript SDK</CardTitle>
+                  <CardDescription className="text-white/80">
+                    Built with Lisk's JavaScript/TypeScript SDK for rapid
+                    development
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-white/90 text-sm">
+                    Utilizing familiar programming languages to accelerate
+                    development and reduce technical barriers for our team
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-2 border-white bg-white/10 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-white rounded-sm flex items-center justify-center mb-4">
+                    <Layers className="h-6 w-6 text-[#F77A0E]" />
+                  </div>
+                  <CardTitle className="text-white">Layer 2 Scaling</CardTitle>
+                  <CardDescription className="text-white/80">
+                    Leveraging Lisk's Ethereum-compatible Layer 2 solution
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-white/90 text-sm">
+                    Fast transactions, low fees, and full EVM compatibility for
+                    seamless DeFi operations
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-2 border-white bg-white/10 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-white rounded-sm flex items-center justify-center mb-4">
+                    <Network className="h-6 w-6 text-[#F77A0E]" />
+                  </div>
+                  <CardTitle className="text-white">
+                    Modular Architecture
+                  </CardTitle>
+                  <CardDescription className="text-white/80">
+                    Utilizing Lisk's modular blockchain design for flexibility
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-white/90 text-sm">
+                    Customizable modules for asset tokenization, governance, and
+                    cross-chain interoperability
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="mt-12 p-6 border-2 border-white bg-white/5 backdrop-blur-sm rounded-lg">
+              <h3 className="text-xl font-bold text-white mb-4">
+                🚀 Lisk Technology Stack
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <h4 className="font-semibold text-white mb-2">
+                    Developer Tools:
+                  </h4>
+                  <ul className="space-y-1 text-sm text-white/90">
+                    <li>• Lisk SDK for custom blockchain applications</li>
+                    <li>• JavaScript/TypeScript development environment</li>
+                    <li>• Comprehensive documentation and tutorials</li>
+                    <li>• Command-line tools (Lisk Commander)</li>
+                  </ul>
                 </div>
-              </div>
-              <div className="space-y-2 p-6 border-2 border-black bg-white">
-                <div className="text-4xl font-bold text-black">500+</div>
-                <div className="text-sm text-black">
-                  Supported Traditional Assets
+                <div>
+                  <h4 className="font-semibold text-white mb-2">
+                    Infrastructure Benefits:
+                  </h4>
+                  <ul className="space-y-1 text-sm text-white/90">
+                    <li>• Delegated Proof of Stake consensus</li>
+                    <li>• Cross-chain interoperability</li>
+                    <li>• Mobile-first design philosophy</li>
+                    <li>• High-growth market optimization</li>
+                  </ul>
                 </div>
-              </div>
-              <div className="space-y-2 p-6 border-2 border-black bg-white">
-                <div className="text-4xl font-bold text-black">100K+</div>
-                <div className="text-sm text-black">Target Active Users</div>
               </div>
             </div>
           </div>
@@ -85,13 +222,13 @@ export default function HomePage() {
         {/* Problem & Solution */}
         <section
           id="solution"
-          className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-black"
+          className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-[#F77A0E]"
         >
           <div className="container px-4 md:px-6 mx-auto">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-              <div className="space-y-6 p-6 border-2 border-black">
+              <div className="space-y-6 p-6 border-2 border-[#F77A0E]">
                 <div className="space-y-2">
-                  <Badge className="bg-white text-black border-2 border-black">
+                  <Badge className="bg-white text-[#F77A0E] border-2 border-[#F77A0E]">
                     Current Problems
                   </Badge>
                   <h2 className="text-3xl font-bold tracking-tighter text-black">
@@ -100,7 +237,7 @@ export default function HomePage() {
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-black rounded-full mt-2"></div>
+                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
                     <div>
                       <h3 className="font-semibold text-black">
                         High Entry Barriers
@@ -111,7 +248,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-black rounded-full mt-2"></div>
+                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
                     <div>
                       <h3 className="font-semibold text-black">
                         Geographic Restrictions
@@ -122,7 +259,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-black rounded-full mt-2"></div>
+                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
                     <div>
                       <h3 className="font-semibold text-black">High Fees</h3>
                       <p className="text-black">
@@ -133,16 +270,18 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              <div className="space-y-6 p-6 border-2 border-black bg-gray-100">
+              <div className="space-y-6 p-6 border-2 border-[#F77A0E] bg-gray-100">
                 <div className="space-y-2">
-                  <Badge className="bg-black text-white">URIP Solution</Badge>
+                  <Badge className="bg-[#F77A0E] text-white">
+                    URIP Solution
+                  </Badge>
                   <h2 className="text-3xl font-bold tracking-tighter text-black">
                     Innovative DeFi Platform
                   </h2>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-black rounded-full mt-2"></div>
+                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
                     <div>
                       <h3 className="font-semibold text-black">
                         Global Access
@@ -153,7 +292,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-black rounded-full mt-2"></div>
+                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
                     <div>
                       <h3 className="font-semibold text-black">
                         Fractional Ownership
@@ -164,7 +303,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-black rounded-full mt-2"></div>
+                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
                     <div>
                       <h3 className="font-semibold text-black">24/7 Trading</h3>
                       <p className="text-black">
@@ -179,7 +318,7 @@ export default function HomePage() {
         </section>
 
         {/* Dual Track Investment */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 border-b-2 border-black">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 border-b-2 border-[#F77A0E]">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="text-center space-y-4 mb-12">
               <h2 className="text-3xl font-bold tracking-tighter text-black">
@@ -191,9 +330,9 @@ export default function HomePage() {
               </p>
             </div>
             <div className="grid gap-8 lg:grid-cols-2">
-              <Card className="border-2 border-black bg-white">
+              <Card className="border-2 border-[#F77A0E] bg-white">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mb-4">
                     <Coins className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-black">
@@ -218,9 +357,9 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-2 border-black bg-white">
+              <Card className="border-2 border-[#F77A0E] bg-white">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mb-4">
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-black">
@@ -232,34 +371,34 @@ export default function HomePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 border-2 border-black bg-gray-100">
+                  <div className="p-4 border-2 border-[#F77A0E] bg-gray-100">
                     <h4 className="font-bold text-black mb-2">
                       🏛️ DAO GOVERNANCE FEATURES:
                     </h4>
                     <ul className="space-y-2 text-sm text-black">
                       <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-black rounded-full mt-2"></div>
+                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
                         <span>
                           <strong>Democratic Voting:</strong> Community decides
                           investment strategies
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-black rounded-full mt-2"></div>
+                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
                         <span>
                           <strong>Proposal System:</strong> Submit & vote on
                           rebalancing decisions
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-black rounded-full mt-2"></div>
+                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
                         <span>
                           <strong>Transparent Governance:</strong> All decisions
                           recorded on-chain
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-black rounded-full mt-2"></div>
+                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
                         <span>
                           <strong>Token-Based Voting:</strong> Voting power
                           based on $URIP holdings
@@ -287,7 +426,7 @@ export default function HomePage() {
         {/* Core Features */}
         <section
           id="features"
-          className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-black"
+          className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-[#F77A0E]"
         >
           <div className="container px-4 md:px-6 mx-auto">
             <div className="text-center space-y-4 mb-12">
@@ -300,9 +439,9 @@ export default function HomePage() {
               </p>
             </div>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="text-center border-2 border-black bg-white">
+              <Card className="text-center border-2 border-[#F77A0E] bg-white">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
                     <Shield className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-black">High Security</CardTitle>
@@ -314,9 +453,9 @@ export default function HomePage() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="text-center border-2 border-black bg-white">
+              <Card className="text-center border-2 border-[#F77A0E] bg-white">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
                     <Eye className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-black">
@@ -330,9 +469,9 @@ export default function HomePage() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="text-center border-2 border-black bg-white">
+              <Card className="text-center border-2 border-[#F77A0E] bg-white">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
                     <Zap className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-black">
@@ -345,9 +484,9 @@ export default function HomePage() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="text-center border-2 border-black bg-white">
+              <Card className="text-center border-2 border-[#F77A0E] bg-white">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mx-auto mb-4">
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-black">
@@ -367,7 +506,7 @@ export default function HomePage() {
         {/* Vision & Mission */}
         <section
           id="about"
-          className="w-full py-12 md:py-24 lg:py-32 bg-black text-white border-b-2 border-black"
+          className="w-full py-12 md:py-24 lg:py-32 bg-black text-white border-b-2 border-[#F77A0E]"
         >
           <div className="container px-4 md:px-6 mx-auto">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
@@ -435,9 +574,9 @@ export default function HomePage() {
         </section>
 
         {/* CTA Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 border-b-2 border-black">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 border-b-2 border-[#F77A0E]">
           <div className="container px-4 md:px-6 mx-auto">
-            <div className="text-center space-y-4 p-8 border-2 border-black bg-white">
+            <div className="text-center space-y-4 p-8 border-2 border-[#F77A0E] bg-white">
               <h2 className="text-3xl font-bold tracking-tighter text-black">
                 Ready to Start Global Investment?
               </h2>
@@ -446,13 +585,13 @@ export default function HomePage() {
                 securely, and transparently.
               </p>
               <div className="space-x-4">
-                <Button className="bg-black text-white hover:bg-gray-800 px-8 py-3 text-lg border-2 border-black">
+                <Button className="bg-[#F77A0E] text-white hover:bg-[#E06A00] px-8 py-3 text-lg border-2 border-[#F77A0E]">
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-2 border-black text-black hover:bg-gray-100 px-8 py-3 text-lg bg-white"
+                  className="border-2 border-[#F77A0E] text-[#F77A0E] hover:bg-[#F77A0E] hover:text-white px-8 py-3 text-lg bg-white"
                 >
                   Contact Team
                 </Button>
@@ -463,7 +602,7 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t-2 border-black">
+      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t-2 border-[#F77A0E]">
         <p className="text-xs text-black">© 2024 URIP. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link href="#" className="text-xs text-black hover:underline">
