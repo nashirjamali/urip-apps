@@ -18,9 +18,12 @@ import {
   ChevronDown,
   ChevronUp,
   DollarSign,
-  Zap,
+  Menu,
+  X,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useAccount } from "wagmi"
 
 // Data configuration
 const platformData = {
@@ -97,6 +100,7 @@ const platformData = {
 }
 
 export default function SynthFiLandingPage() {
+  const router = useRouter()
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const [animatedStats, setAnimatedStats] = useState({
     totalVolume: 0,
@@ -105,7 +109,14 @@ export default function SynthFiLandingPage() {
     averageReturn: 0,
   })
   const [scrolled, setScrolled] = useState(false) // Reintroduce scrolled state
-
+  const [activeSection, setActiveSection] = useState("hero") // Track active section
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false) // Mobile menu state
+  const { address } = useAccount();
+  useEffect(() => {
+    if (address) {
+      router.push('/dashboard')
+    }
+  }, [address])
   // Animate statistics on load
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -135,6 +146,40 @@ export default function SynthFiLandingPage() {
     }
   }, [])
 
+  // Track active section with intersection observer
+  useEffect(() => {
+    const sections = ["hero", "about", "how-it-works", "assets", "faq"]
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY + 100 // Offset for header
+
+      for (const sectionId of sections) {
+        const element = document.getElementById(sectionId)
+        if (element) {
+          const rect = element.getBoundingClientRect()
+          const elementTop = rect.top + window.scrollY
+          const elementBottom = elementTop + rect.height
+
+          if (scrollY >= elementTop && scrollY < elementBottom) {
+            setActiveSection(sectionId)
+            console.log("Active section:", sectionId) // Debug log
+            break
+          }
+        }
+      }
+    }
+
+    // Initial check
+    handleScroll()
+
+    // Add scroll listener
+    window.addEventListener("scroll", handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {
@@ -156,61 +201,161 @@ export default function SynthFiLandingPage() {
 
       {/* Header */}
       <header
-        className={`fixed top-0 left-0 w-full z-50 px-4 transition-all duration-300 ${
-          scrolled ? "py-3 bg-dark-bg-primary/80 backdrop-blur-md shadow-lg" : "py-6 bg-dark-bg-primary"
-        }`}
+        className={`fixed top-0 left-0 w-full z-50 px-6 transition-all duration-300 ${scrolled ? "py-3 backdrop-blur-md shadow-lg" : "py-4"
+          }`}
       >
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-dark-accent-blue to-dark-accent-purple rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-dark-text-primary">SynthFi</span>
+        <nav className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <img src="/urip.png" alt="Urip Logo" className="w-8 h-8 object-contain" />
+            <span className="text-white text-xl font-semibold">Urip</span>
           </div>
-          <nav className="hidden lg:flex space-x-8">
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8 bg-slate-800/50 backdrop-blur-sm rounded-full px-8 py-3 border border-slate-700/50">
             <button
               onClick={() => scrollToSection("hero")}
-              className="text-dark-text-primary bg-dark-bg-secondary/50 rounded-md px-3 py-2 transition-colors relative group" // Active "tile" style
+              className={`font-medium pb-1 transition-colors ${activeSection === "hero"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-300 hover:text-white"
+                }`}
             >
               Home
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-dark-glow-blue scale-x-100 transition-transform duration-300"></span>
             </button>
             <button
               onClick={() => scrollToSection("about")}
-              className="text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-bg-secondary/30 rounded-md px-3 py-2 transition-colors relative group"
+              className={`font-medium pb-1 transition-colors ${activeSection === "about"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-300 hover:text-white"
+                }`}
             >
               Why Us
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-dark-glow-blue scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
             </button>
             <button
               onClick={() => scrollToSection("how-it-works")}
-              className="text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-bg-secondary/30 rounded-md px-3 py-2 transition-colors relative group"
+              className={`font-medium pb-1 transition-colors ${activeSection === "how-it-works"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-300 hover:text-white"
+                }`}
             >
               How It Works
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-dark-glow-blue scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
             </button>
             <button
               onClick={() => scrollToSection("assets")}
-              className="text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-bg-secondary/30 rounded-md px-3 py-2 transition-colors relative group"
+              className={`font-medium pb-1 transition-colors ${activeSection === "assets"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-300 hover:text-white"
+                }`}
             >
               Assets
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-dark-glow-blue scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
             </button>
             <button
               onClick={() => scrollToSection("faq")}
-              className="text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-bg-secondary/30 rounded-md px-3 py-2 transition-colors relative group"
+              className={`font-medium pb-1 transition-colors ${activeSection === "faq"
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-slate-300 hover:text-white"
+                }`}
             >
               Faq
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-dark-glow-blue scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
             </button>
-          </nav>
-          <Button
-            variant="outline"
-            className="border border-dark-glow-blue text-dark-glow-blue hover:bg-dark-glow-blue/10 px-6 py-2 rounded-lg bg-transparent"
+          </div>
+
+          {/* Desktop Contact Button */}
+          <div className="hidden md:block">
+            <Button
+              onClick={() => router.push('/login')}
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white bg-transparent"
+            >
+              Connect Wallet
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden text-white p-2"
           >
-            Connect Wallet
-          </Button>
-        </div>
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </nav>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-700/50">
+            <div className="px-6 py-4 space-y-4">
+              <button
+                onClick={() => {
+                  scrollToSection("hero")
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left py-3 px-4 rounded-lg transition-colors ${activeSection === "hero"
+                    ? "text-blue-400 bg-slate-800/50"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/30"
+                  }`}
+              >
+                Home
+              </button>
+              <button
+                onClick={() => {
+                  scrollToSection("about")
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left py-3 px-4 rounded-lg transition-colors ${activeSection === "about"
+                    ? "text-blue-400 bg-slate-800/50"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/30"
+                  }`}
+              >
+                Why Us
+              </button>
+              <button
+                onClick={() => {
+                  scrollToSection("how-it-works")
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left py-3 px-4 rounded-lg transition-colors ${activeSection === "how-it-works"
+                    ? "text-blue-400 bg-slate-800/50"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/30"
+                  }`}
+              >
+                How It Works
+              </button>
+              <button
+                onClick={() => {
+                  scrollToSection("assets")
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left py-3 px-4 rounded-lg transition-colors ${activeSection === "assets"
+                    ? "text-blue-400 bg-slate-800/50"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/30"
+                  }`}
+              >
+                Assets
+              </button>
+              <button
+                onClick={() => {
+                  scrollToSection("faq")
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left py-3 px-4 rounded-lg transition-colors ${activeSection === "faq"
+                    ? "text-blue-400 bg-slate-800/50"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/30"
+                  }`}
+              >
+                Faq
+              </button>
+              <div className="pt-4 border-t border-slate-700/50">
+                <Button
+                  onClick={() => router.push('/login')}
+                  variant="outline"
+                  className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white bg-transparent"
+                >
+                  Connect Wallet
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -242,35 +387,37 @@ export default function SynthFiLandingPage() {
           </div>
 
           {/* Right Side - Floating 3D-like Icons */}
-          <div className="relative h-96 flex items-center justify-center">
-            <div className="absolute w-full h-full flex items-center justify-center">
-              {/* Simulated 3D Icons */}
-              <div
-                className="absolute w-32 h-32 bg-dark-bg-secondary rounded-2xl flex items-center justify-center glow-effect"
-                style={{
-                  transform: "rotateX(20deg) rotateY(-20deg) translateZ(0px)",
-                  animation: "float-y 4s ease-in-out infinite",
-                }}
-              >
-                <img src="/placeholder.svg?height=64&width=64" alt="Ethereum" className="w-16 h-16 opacity-80" />
-              </div>
-              <div
-                className="absolute w-32 h-32 bg-dark-bg-secondary rounded-2xl flex items-center justify-center glow-effect"
-                style={{
-                  transform: "rotateX(20deg) rotateY(10deg) translateZ(20px) translateX(80px) translateY(40px)",
-                  animation: "float-y 4.5s ease-in-out infinite 0.5s",
-                }}
-              >
-                <img src="/placeholder.svg?height=64&width=64" alt="Chainlink" className="w-16 h-16 opacity-80" />
-              </div>
-              <div
-                className="absolute w-32 h-32 bg-dark-bg-secondary rounded-2xl flex items-center justify-center glow-effect"
-                style={{
-                  transform: "rotateX(20deg) rotateY(-40deg) translateZ(-20px) translateX(-80px) translateY(-40px)",
-                  animation: "float-y 5s ease-in-out infinite 1s",
-                }}
-              >
-                <img src="/placeholder.svg?height=64&width=64" alt="Polygon" className="w-16 h-16 opacity-80" />
+          <div className="relative flex justify-center items-center">
+            <div className="relative w-96 h-96">
+              {/* Glowing Background Effect */}
+              <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-3xl"></div>
+
+              {/* 3D Cards Stack */}
+              <div className="relative z-10 transform rotate-12">
+                {/* Top Card */}
+                <div className="absolute top-0 right-8 w-32 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl transform -rotate-12 border border-blue-300/30">
+                  <div className="absolute inset-2 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div className="w-8 h-8 bg-white/80 rounded-lg transform rotate-45"></div>
+                  </div>
+                </div>
+
+                {/* Middle Card */}
+                <div className="absolute top-12 left-8 w-36 h-24 bg-gradient-to-br from-purple-400 to-blue-500 rounded-2xl shadow-2xl transform rotate-6 border border-purple-300/30">
+                  <div className="absolute inset-2 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-6 bg-white/80 rounded-md flex items-center justify-center">
+                      <div className="w-6 h-2 bg-blue-600 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Card */}
+                <div className="absolute top-24 right-4 w-40 h-28 bg-gradient-to-br from-blue-300 to-purple-500 rounded-2xl shadow-2xl transform -rotate-6 border border-blue-300/30">
+                  <div className="absolute inset-2 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-8 bg-white/80 rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -375,7 +522,7 @@ export default function SynthFiLandingPage() {
               <Card className="bg-dark-bg-secondary border border-dark-border shadow-lg rounded-2xl hover:shadow-xl transition-all duration-300 group">
                 <CardContent className="p-6">
                   <div className="w-12 h-12 bg-primary-green rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Zap className="w-6 h-6 text-white" />
+                    {/* <Urip className="w-6 h-6 text-white" /> */}
                   </div>
                   <h3 className="text-lg font-bold text-dark-text-primary mb-2">Liquidity Pools</h3>
                   <p className="text-dark-text-secondary text-sm">Deep liquidity ensures seamless trading anytime</p>
@@ -405,7 +552,7 @@ export default function SynthFiLandingPage() {
                 <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-r from-dark-accent-blue to-dark-glow-blue rounded-full flex items-center justify-center text-white font-bold text-sm">
                   1
                 </div>
-                <h3 className="text-xl font-bold text-dark-text-primary mb-4">Connect Wallet</h3>
+                <h3 className="text-xl font-bold text-dark-text-primary mb-4" onClick={() => router.push('/login')}>Connect Wallet</h3>
                 <div className="space-y-2 text-sm text-dark-text-secondary">
                   <p>Connect your Web3 wallet (MetaMask, WalletConnect)</p>
                   <p>Deposit USDT or ETH as collateral</p>
@@ -480,13 +627,12 @@ export default function SynthFiLandingPage() {
                 <CardContent className="p-8">
                   <div className="flex items-center justify-between mb-6">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-r ${
-                        asset.color === "blue"
-                          ? "from-dark-accent-blue to-dark-glow-blue"
-                          : asset.color === "yellow"
-                            ? "from-primary-yellow to-orange-500"
-                            : "from-primary-green to-primary-blue"
-                      } rounded-lg flex items-center justify-center`}
+                      className={`w-12 h-12 bg-gradient-to-r ${asset.color === "blue"
+                        ? "from-dark-accent-blue to-dark-glow-blue"
+                        : asset.color === "yellow"
+                          ? "from-primary-yellow to-orange-500"
+                          : "from-primary-green to-primary-blue"
+                        } rounded-lg flex items-center justify-center`}
                     >
                       {asset.color === "blue" ? (
                         <BarChart3 className="w-6 h-6 text-white" />
@@ -497,11 +643,10 @@ export default function SynthFiLandingPage() {
                       )}
                     </div>
                     <Badge
-                      className={`${
-                        asset.change > 0
-                          ? "bg-green-700/20 text-green-400 border-transparent"
-                          : "bg-red-700/20 text-red-400 border-transparent"
-                      }`}
+                      className={`${asset.change > 0
+                        ? "bg-green-700/20 text-green-400 border-transparent"
+                        : "bg-red-700/20 text-red-400 border-transparent"
+                        }`}
                     >
                       {asset.change > 0 ? "+" : ""}
                       {asset.change}%
@@ -514,13 +659,12 @@ export default function SynthFiLandingPage() {
                   <p className="text-dark-text-secondary text-sm mb-4">{asset.description}</p>
                   <div className="text-sm text-dark-text-secondary mb-6">24h Volume: ${asset.volume}M</div>
                   <div
-                    className={`h-16 bg-gradient-to-r ${
-                      asset.color === "blue"
-                        ? "from-dark-accent-blue/20 to-dark-glow-blue/20"
-                        : asset.color === "yellow"
-                          ? "from-primary-yellow/20 to-orange-400/20"
-                          : "from-primary-green/20 to-primary-blue/20"
-                    } rounded-lg flex items-end justify-center`}
+                    className={`h-16 bg-gradient-to-r ${asset.color === "blue"
+                      ? "from-dark-accent-blue/20 to-dark-glow-blue/20"
+                      : asset.color === "yellow"
+                        ? "from-primary-yellow/20 to-orange-400/20"
+                        : "from-primary-green/20 to-primary-blue/20"
+                      } rounded-lg flex items-end justify-center`}
                   >
                     <div className="text-xs text-dark-text-secondary">Chart visualization</div>
                   </div>

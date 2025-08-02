@@ -7,13 +7,13 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Check, 
-  X, 
-  Clock, 
-  Users, 
-  TrendingUp, 
-  Award, 
+import {
+  Check,
+  X,
+  Clock,
+  Users,
+  TrendingUp,
+  Award,
   Star,
   ExternalLink,
   Copy,
@@ -46,6 +46,9 @@ import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import Navigation from '@/components/Navigation'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
 
 // Fund Manager Data
 const fundManagers = [
@@ -245,7 +248,7 @@ const voteTotals = fundManagers.map(manager => {
   };
 });
 
-export default function DAOPage() {
+function DAOPageContent() {
   const [selectedManager, setSelectedManager] = useState<string | null>(null);
   const [userVotingPower, setUserVotingPower] = useState(100);
   const [activeTab, setActiveTab] = useState("overview");
@@ -255,15 +258,16 @@ export default function DAOPage() {
     minutes: 0,
     seconds: 0
   });
-
+  const { address } = useAccount();
+  const router = useRouter();
   // Calculate time remaining
   useEffect(() => {
     const endDate = new Date(votingData.proposal.endDate).getTime();
-    
+
     const timer = setInterval(() => {
       const now = new Date().getTime();
       const distance = endDate - now;
-      
+
       if (distance > 0) {
         setTimeRemaining({
           days: Math.floor(distance / (1000 * 60 * 60 * 24)),
@@ -373,12 +377,11 @@ export default function DAOPage() {
                     <div key={index} className="group hover:bg-gray-700/50 p-4 rounded-lg transition-all duration-300 border border-gray-700/50">
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded-full ${
-                            index === 0 ? "bg-emerald-400" : 
-                            index === 1 ? "bg-blue-400" : 
-                            index === 2 ? "bg-purple-400" : 
-                            "bg-amber-400"
-                          }`}></div>
+                          <div className={`w-4 h-4 rounded-full ${index === 0 ? "bg-emerald-400" :
+                              index === 1 ? "bg-blue-400" :
+                                index === 2 ? "bg-purple-400" :
+                                  "bg-amber-400"
+                            }`}></div>
                           <span className="font-semibold text-white text-lg">{vote.manager}</span>
                           {index === 0 && (
                             <Badge className="bg-emerald-500/30 text-emerald-200 border-emerald-400 text-xs px-2 py-1">
@@ -412,15 +415,14 @@ export default function DAOPage() {
                   const voteData = voteTotals.find(v => v.manager === manager.name);
                   const votePercentage = voteData ? voteData.percentage : 0;
                   const isLeading = index === 0;
-                  
+
                   return (
-                    <Card 
+                    <Card
                       key={manager.id}
-                      className={`group cursor-pointer transition-all duration-300 hover:shadow-xl ${
-                        selectedManager === manager.name 
-                          ? 'ring-2 ring-blue-400 bg-blue-500/20 shadow-xl border-blue-400' 
+                      className={`group cursor-pointer transition-all duration-300 hover:shadow-xl ${selectedManager === manager.name
+                          ? 'ring-2 ring-blue-400 bg-blue-500/20 shadow-xl border-blue-400'
                           : 'bg-gray-800 border border-gray-600 hover:bg-gray-750 hover:border-gray-500'
-                      }`}
+                        }`}
                       onClick={() => setSelectedManager(manager.name)}
                     >
                       <CardContent className="p-6">
@@ -431,7 +433,7 @@ export default function DAOPage() {
                               <AvatarImage src={manager.avatar} />
                               <AvatarFallback className="text-xl bg-gray-700 font-bold text-white">{manager.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            
+
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className="text-xl font-bold text-white">{manager.name}</h3>
@@ -441,18 +443,17 @@ export default function DAOPage() {
                                     Leading
                                   </Badge>
                                 )}
-                                <Badge className={`${
-                                  manager.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' :
-                                  manager.riskLevel === 'Medium' ? 'bg-amber-500/20 text-amber-300 border-amber-400/50' :
-                                  'bg-rose-500/20 text-rose-300 border-rose-400/50'
-                                }`}>
+                                <Badge className={`${manager.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' :
+                                    manager.riskLevel === 'Medium' ? 'bg-amber-500/20 text-amber-300 border-amber-400/50' :
+                                      'bg-rose-500/20 text-rose-300 border-rose-400/50'
+                                  }`}>
                                   {manager.riskLevel} Risk
                                 </Badge>
                                 <Badge variant="outline" className="border-gray-500 text-gray-300">
                                   {manager.compliance}
                                 </Badge>
                               </div>
-                              
+
                               <div className="flex items-center gap-2 mb-3">
                                 <div className="flex items-center gap-1 text-amber-400">
                                   <Star className="h-4 w-4 fill-current" />
@@ -463,11 +464,11 @@ export default function DAOPage() {
                                 <span className="text-gray-400">•</span>
                                 <span className="text-gray-300">{manager.trackRecord} experience</span>
                               </div>
-                              
+
                               <p className="text-gray-200 leading-relaxed text-sm">{manager.description}</p>
                             </div>
                           </div>
-                          
+
                           <div className="flex-shrink-0">
                             {selectedManager === manager.name && (
                               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
@@ -514,13 +515,12 @@ export default function DAOPage() {
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
                             {manager.assetAllocation.map((asset, idx) => (
                               <div key={idx} className="flex items-center gap-2 text-xs">
-                                <div className={`w-2 h-2 rounded-full ${
-                                  idx === 0 ? "bg-blue-500" : 
-                                  idx === 1 ? "bg-emerald-500" : 
-                                  idx === 2 ? "bg-purple-500" : 
-                                  idx === 3 ? "bg-amber-500" : 
-                                  "bg-rose-500"
-                                }`}></div>
+                                <div className={`w-2 h-2 rounded-full ${idx === 0 ? "bg-blue-500" :
+                                    idx === 1 ? "bg-emerald-500" :
+                                      idx === 2 ? "bg-purple-500" :
+                                        idx === 3 ? "bg-amber-500" :
+                                          "bg-rose-500"
+                                  }`}></div>
                                 <span className="text-white font-medium">{asset.symbol}</span>
                                 <span className="text-gray-300">{asset.percentage}%</span>
                               </div>
@@ -529,15 +529,14 @@ export default function DAOPage() {
                           <div className="bg-gray-600/30 rounded-md p-1 overflow-hidden">
                             <div className="flex h-2 rounded-sm overflow-hidden">
                               {manager.assetAllocation.map((asset, idx) => (
-                                <div 
+                                <div
                                   key={idx}
-                                  className={`${
-                                    idx === 0 ? "bg-blue-500" : 
-                                    idx === 1 ? "bg-emerald-500" : 
-                                    idx === 2 ? "bg-purple-500" : 
-                                    idx === 3 ? "bg-amber-500" : 
-                                    "bg-rose-500"
-                                  }`}
+                                  className={`${idx === 0 ? "bg-blue-500" :
+                                      idx === 1 ? "bg-emerald-500" :
+                                        idx === 2 ? "bg-purple-500" :
+                                          idx === 3 ? "bg-amber-500" :
+                                            "bg-rose-500"
+                                    }`}
                                   style={{ width: `${asset.percentage}%` }}
                                 ></div>
                               ))}
@@ -640,8 +639,8 @@ export default function DAOPage() {
                     </div>
                   )}
 
-                  <Button 
-                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50 font-medium" 
+                  <Button
+                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50 font-medium"
                     disabled={!selectedManager}
                     onClick={handleVote}
                   >
@@ -692,4 +691,13 @@ export default function DAOPage() {
       </main>
     </div>
   )
+}
+
+// Main DAO page component with authentication protection
+export default function DAOPage() {
+  return (
+    <ProtectedRoute>
+      <DAOPageContent />
+    </ProtectedRoute>
+  );
 } 

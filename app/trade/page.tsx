@@ -40,6 +40,9 @@ import Link from "next/link"
 import Image from "next/image"
 import dynamic from 'next/dynamic'
 import Navigation from '@/components/Navigation'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
 
 // Import TradingView widget dynamically to avoid SSR issues
 const TradingViewWidget = dynamic(
@@ -146,7 +149,7 @@ const recentTrades = [
   { id: 4, asset: "Bitcoin", type: "buy", amount: "0.02 BTC", value: "$1,360", status: "completed", time: "1 day ago" }
 ]
 
-export default function TradePage() {
+function TradePageContent() {
   const [isDark, setIsDark] = useState(true)
   const [selectedAsset, setSelectedAsset] = useState(assets[0])
   const [tradeAmount, setTradeAmount] = useState("1000")
@@ -167,6 +170,8 @@ export default function TradePage() {
     { id: 1, asset: "Bitcoin", price: 70000, direction: 'above', active: true },
     { id: 2, asset: "Ethereum", price: 3000, direction: 'below', active: true }
   ])
+  const { address } = useAccount();
+  const router = useRouter();
 
   // Handle asset change
   const handleAssetChange = (asset: any) => {
@@ -1316,4 +1321,13 @@ export default function TradePage() {
       </main>
     </div>
   )
+}
+
+// Main Trade page component with authentication protection
+export default function TradePage() {
+  return (
+    <ProtectedRoute>
+      <TradePageContent />
+    </ProtectedRoute>
+  );
 } 

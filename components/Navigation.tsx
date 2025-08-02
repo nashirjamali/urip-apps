@@ -2,7 +2,9 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useDisconnect } from 'wagmi'
+import { useWalletStore } from '@/stores/useWalletStore'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { 
@@ -16,6 +18,9 @@ import {
 
 const Navigation = () => {
   const pathname = usePathname()
+  const router = useRouter()
+  const { disconnect } = useDisconnect()
+  const { setAddress, setBalance } = useWalletStore()
   
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -26,6 +31,14 @@ const Navigation = () => {
 
   const isActive = (href: string) => pathname === href
 
+  const handleLogout = () => {
+    // Disconnect wallet
+    disconnect()
+    
+    // Redirect to home page
+    router.push('/')
+  }
+
   return (
     <header className="bg-gray-900/80 backdrop-blur-lg border-b border-gray-800 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -33,10 +46,8 @@ const Navigation = () => {
         <div className="flex items-center space-x-6">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">T</span>
-            </div>
-            <span className="text-white font-bold text-lg hidden sm:block">TradePro</span>
+            <img src="/urip.png" alt="Urip Logo" className="w-8 h-8 object-contain" />
+            <span className="text-white font-bold text-lg hidden sm:block">Urip</span>
           </Link>
           
           {/* Navigation Items */}
@@ -88,7 +99,7 @@ const Navigation = () => {
             >
               <DropdownMenuItem className="hover:bg-gray-800">Profile</DropdownMenuItem>
               <DropdownMenuItem className="hover:bg-gray-800">Settings</DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-gray-800">Logout</DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-gray-800" onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

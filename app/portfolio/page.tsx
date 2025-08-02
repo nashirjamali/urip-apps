@@ -54,6 +54,9 @@ import Link from "next/link"
 import Image from "next/image"
 import dynamic from 'next/dynamic'
 import Navigation from '@/components/Navigation'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
 
 // Import custom portfolio chart
 import PortfolioChart from '../../components/PortfolioChart'
@@ -293,7 +296,7 @@ const performanceData = [
   { date: "2024-01-15", value: 24580 }
 ]
 
-export default function PortfolioPage() {
+function PortfolioPageContent() {
   const [isDark, setIsDark] = useState(true)
   const [selectedTimeframe, setSelectedTimeframe] = useState("1M")
   const [selectedAsset, setSelectedAsset] = useState(portfolioAssets[0])
@@ -305,7 +308,8 @@ export default function PortfolioPage() {
   const [isClient, setIsClient] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
   const [showTransactionModal, setShowTransactionModal] = useState(false)
-
+  const { address } = useAccount();
+  const router = useRouter();
   useEffect(() => {
     setIsClient(true)
   }, [])
@@ -979,4 +983,13 @@ export default function PortfolioPage() {
       </main>
     </div>
   )
+}
+
+// Main Portfolio page component with authentication protection
+export default function PortfolioPage() {
+  return (
+    <ProtectedRoute>
+      <PortfolioPageContent />
+    </ProtectedRoute>
+  );
 } 

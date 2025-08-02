@@ -11,6 +11,9 @@ import Link from "next/link"
 import Image from "next/image"
 import dynamic from 'next/dynamic'
 import Navigation from '@/components/Navigation'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
 
 // Import TradingView widget dynamically to avoid SSR issues
 const TradingViewWidget = dynamic(
@@ -299,7 +302,7 @@ const dashboardData = {
   ],
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const [isDark, setIsDark] = useState(true) // Set to true by default for dark theme
   const [scrollPosition, setScrollPosition] = useState(0)
   const carouselRef = useRef<HTMLDivElement>(null)
@@ -312,7 +315,8 @@ export default function Dashboard() {
   const [filterCountry, setFilterCountry] = useState<string | null>(null)
   const [filterSector, setFilterSector] = useState<string | null>(null)
   const [showRecommendedOnly, setShowRecommendedOnly] = useState(false)
-
+  const { address } = useAccount();
+  const router = useRouter();
   // Get unique countries and sectors for filters
   const countries = Array.from(new Set(dashboardData.stocksData.map(stock => stock.country)));
   const sectors = Array.from(new Set(dashboardData.stocksData.map(stock => stock.sector)));
@@ -1198,4 +1202,13 @@ export default function Dashboard() {
       </main>
     </div>
   )
+}
+
+// Main Dashboard component with authentication protection
+export default function Dashboard() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
+  );
 }

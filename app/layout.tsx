@@ -1,14 +1,17 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import "./globals.css" // Pastikan baris ini ada!
+import "./globals.css"
+import { Web3Provider } from '../providers/Web3Provider';
+import { ThemeProvider } from '../providers/ThemeProvider';
+import { LanguageProvider } from '../providers/LanguageProvider';
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SynthFi - Invest in Traditional Assets with Crypto Simplicity",
-  description: "Trade tokenized Nasdaq, Gold, and S&P 500 with instant settlement.",
-    generator: 'v0.dev'
+  title: "Zap",
+  description: "Zap mobile application",
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -18,7 +21,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      </head>
+      <body className={inter.className}>
+        <ThemeProvider>
+          <LanguageProvider>
+            <Web3Provider>
+              {children}
+            </Web3Provider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </body>
     </html>
   )
 }
