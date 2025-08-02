@@ -28,28 +28,42 @@ const NavItems: NavItem[] = [
 
 export default function Header() {
   return (
-    <nav className="w-full backdrop-filter backdrop-blur-md/30 py-4">
-      <div className="container flex items-center justify-between px-4 gap-4 mx-auto">
+    <nav className="fixed top-4 left-4 right-4 z-50 w-auto mx-auto max-w-7xl py-3 px-6 rounded-2xl backdrop-filter backdrop-blur-2xl bg-white/20 border border-white/30 shadow-2xl shadow-black/10 hover:shadow-black/15 transition-all duration-300 hover:bg-white/25">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Link href="#" className="flex items-center space-x-2 font-semibold">
-            <span className="text-lg font-bold">URIP</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">U</span>
+            </div>
+            <span className="text-lg font-bold text-gray-800 hover:text-gray-600 transition-colors">
+              URIP
+            </span>
           </Link>
         </div>
         <div className="space-x-10 flex-1 flex justify-center items-center">
           {NavItems.map(({ href, label }) => (
-            <Link key={href} href={href} className="font-medium">
+            <Link
+              key={href}
+              href={href}
+              className="font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200 relative group"
+            >
               {label}
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gray-800 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></span>
             </Link>
           ))}
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
           <Link
             href="#"
-            className="flex items-center space-x-2 rounded-lg hover:bg-gray-100/40 px-2 py-2 transition-colors"
+            className="flex items-center space-x-2 rounded-xl hover:bg-white/30 px-4 py-2 transition-all duration-200 text-gray-700 hover:text-gray-900 backdrop-filter backdrop-blur-sm"
           >
             <span className="text-sm font-medium">Login</span>
           </Link>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/40 text-gray-700 hover:bg-white/40 hover:text-gray-900 backdrop-filter backdrop-blur-sm bg-white/30 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"
+          >
             Register
           </Button>
         </div>

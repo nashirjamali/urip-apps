@@ -11,6 +11,41 @@ import { ArrowRight, Shield, Users, Zap, Eye, Coins } from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/Header/Header";
 
+const HeroSection = () => (
+  <section className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-black">
+    <div className="container px-4 md:px-6 mx-auto">
+      <div className="flex flex-col items-center space-y-4 text-center">
+        <Badge className="bg-white text-black border-2 border-black px-4 py-1">
+          Leading DeFi Platform for Traditional Assets
+        </Badge>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-black">
+            Democratizing Global Investment with{" "}
+            <span className="underline">Blockchain</span>
+          </h1>
+          <p className="mx-auto max-w-[700px] text-black md:text-xl">
+            URIP bridges traditional finance and DeFi, providing easy,
+            transparent, and cost-effective global investment access to
+            everyone.
+          </p>
+        </div>
+        <div className="space-x-4">
+          <Button className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-lg border-2 border-black">
+            Start Investing
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+          <Button
+            variant="outline"
+            className="border-2 border-black text-black hover:bg-gray-100 px-8 py-3 text-lg bg-white"
+          >
+            Learn More
+          </Button>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -18,38 +53,7 @@ export default function HomePage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-black">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center space-y-4 text-center">
-              <Badge className="bg-white text-black border-2 border-black px-4 py-1">
-                Leading DeFi Platform for Traditional Assets
-              </Badge>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-black">
-                  Democratizing Global Investment with{" "}
-                  <span className="underline">Blockchain</span>
-                </h1>
-                <p className="mx-auto max-w-[700px] text-black md:text-xl">
-                  URIP bridges traditional finance and DeFi, providing easy,
-                  transparent, and cost-effective global investment access to
-                  everyone.
-                </p>
-              </div>
-              <div className="space-x-4">
-                <Button className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-lg border-2 border-black">
-                  Start Investing
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-2 border-black text-black hover:bg-gray-100 px-8 py-3 text-lg bg-white"
-                >
-                  Learn More
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
+        <HeroSection />
 
         {/* Statistics Section */}
         <section

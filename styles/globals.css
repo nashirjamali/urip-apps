@@ -92,3 +92,312 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Enhanced Glassmorphism Styles for Floating Header */
+.glass-floating-header {
+  backdrop-filter: blur(24px) saturate(200%);
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.glass-floating-header:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Floating animation */
+@keyframes float-header {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.header-floating {
+  animation: float-header 6s ease-in-out infinite;
+}
+
+/* Enhanced nav item effects for floating header */
+.floating-nav-item {
+  position: relative;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.floating-nav-item:hover {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  transform: translateY(-1px);
+}
+
+.floating-nav-item::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+
+.floating-nav-item:hover::after {
+  width: 80%;
+}
+
+/* Logo enhancement for floating header */
+.floating-logo {
+  transition: all 0.3s ease;
+}
+
+.floating-logo:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+
+/* Button enhancements for floating header */
+.floating-button {
+  backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.floating-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s;
+}
+
+.floating-button:hover::before {
+  left: 100%;
+}
+
+.floating-button:hover {
+  background: rgba(255, 255, 255, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive floating header */
+@media (max-width: 768px) {
+  .glass-floating-header {
+    margin: 0.5rem;
+    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@media (max-width: 640px) {
+  .glass-floating-header {
+    border-radius: 1rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Scroll-based header animation */
+.header-scroll-hidden {
+  transform: translateY(-120%);
+  opacity: 0;
+}
+
+.header-scroll-visible {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Glass card variations */
+.glass-card-light {
+  backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.glass-card-dark {
+  backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(17, 25, 40, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Button glassmorphism */
+.glass-button {
+  backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Sticky header animations */
+.header-enter {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.header-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Smooth scroll behavior for anchor links */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* Account for sticky header */
+}
+
+/* Enhanced hover effects for navigation */
+.nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.nav-item:hover::before {
+  left: 100%;
+}
+
+/* Glassmorphism backdrop for modals and overlays */
+.glass-backdrop {
+  backdrop-filter: blur(8px) saturate(180%);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Progressive enhancement for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur()) {
+  .glass-header {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .glass-card-light {
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .glass-button {
+    background: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Light mode specific enhancements */
+.light-mode .glass-subtle {
+  backdrop-filter: blur(10px) saturate(150%);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Animation for floating elements */
+@keyframes float-gentle {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.floating-gentle {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+/* Gradient text effects for light mode */
+.gradient-text-blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced shadow system for light mode */
+.shadow-glass {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-glass-hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0 16px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* Responsive glassmorphism adjustments */
+@media (max-width: 768px) {
+  .glass-header {
+    backdrop-filter: blur(15px) saturate(150%);
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* Custom scrollbar for glass elements */
+.glass-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.glass-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.glass-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  backdrop-filter: blur(4px);
+}
+
+.glass-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
