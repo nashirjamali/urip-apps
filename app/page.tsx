@@ -7,18 +7,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowRight,
-  Shield,
-  Users,
-  Zap,
-  Eye,
-  Coins,
-} from "lucide-react";
+import { ArrowRight, Shield, Users, Zap, Eye, Coins } from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/ui/Header/Header";
 import HeroSection from "@/components/partials/LandingPage/HeroSection";
 import LiskSection from "@/components/partials/LandingPage/LiskSection";
+import ProblemSection from "@/components/partials/LandingPage/ProblemSection";
 
 export default function HomePage() {
   return (
@@ -28,104 +22,7 @@ export default function HomePage() {
       <main className="flex-1">
         <HeroSection />
         <LiskSection />
-
-        {/* Problem & Solution */}
-        <section
-          id="solution"
-          className="w-full py-12 md:py-24 lg:py-32 border-b-2 border-[#F77A0E]"
-        >
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-              <div className="space-y-6 p-6 border-2 border-[#F77A0E]">
-                <div className="space-y-2">
-                  <Badge className="bg-white text-[#F77A0E] border-2 border-[#F77A0E]">
-                    Current Problems
-                  </Badge>
-                  <h2 className="text-3xl font-bold tracking-tighter text-black">
-                    Traditional Finance Limitations
-                  </h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
-                    <div>
-                      <h3 className="font-semibold text-black">
-                        High Entry Barriers
-                      </h3>
-                      <p className="text-black">
-                        High minimum investment for diversified portfolios
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
-                    <div>
-                      <h3 className="font-semibold text-black">
-                        Geographic Restrictions
-                      </h3>
-                      <p className="text-black">
-                        Limited access to international markets
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
-                    <div>
-                      <h3 className="font-semibold text-black">High Fees</h3>
-                      <p className="text-black">
-                        Management fees, transaction costs, and currency
-                        conversion
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-6 p-6 border-2 border-[#F77A0E] bg-gray-100">
-                <div className="space-y-2">
-                  <Badge className="bg-[#F77A0E] text-white">
-                    URIP Solution
-                  </Badge>
-                  <h2 className="text-3xl font-bold tracking-tighter text-black">
-                    Innovative DeFi Platform
-                  </h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
-                    <div>
-                      <h3 className="font-semibold text-black">
-                        Global Access
-                      </h3>
-                      <p className="text-black">
-                        Invest in any market from any wallet
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
-                    <div>
-                      <h3 className="font-semibold text-black">
-                        Fractional Ownership
-                      </h3>
-                      <p className="text-black">
-                        Invest from $1 for expensive assets
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-[#F77A0E] rounded-full mt-2"></div>
-                    <div>
-                      <h3 className="font-semibold text-black">24/7 Trading</h3>
-                      <p className="text-black">
-                        Trading not limited to traditional market hours
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <ProblemSection />
 
         {/* Dual Track Investment */}
         <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 border-b-2 border-[#F77A0E]">
