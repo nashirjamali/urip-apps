@@ -150,7 +150,7 @@ export default function HeroSection() {
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
       <div className="absolute w-screen h-screen">
-        <Aurora colorStops={["#F77A0E", "#FF94B4", "#FF3232"]} />
+        <Aurora colorStops={["#E0910C", "#AC5C01", "#E76830"]} />
       </div>
 
       {/* Content Container */}

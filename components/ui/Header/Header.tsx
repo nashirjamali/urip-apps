@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 import { Button } from "../button";
+import Image from "next/image";
 
 interface NavItem {
   label: string;
@@ -32,9 +33,7 @@ export default function Header() {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Link href="#" className="flex items-center space-x-2 font-semibold">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">U</span>
-            </div>
+            <Image src="/urip.png" height={20} width={20} alt="logo" />
             <span className="text-lg font-bold text-white hover:text-gray-300 transition-colors">
               URIP
             </span>
@@ -53,18 +52,12 @@ export default function Header() {
           ))}
         </div>
         <div className="flex items-center space-x-3">
-          <Link
-            href="#"
-            className="flex items-center space-x-2 rounded-xl hover:bg-white/20 px-4 py-2 transition-all duration-200 text-gray-300 hover:text-white backdrop-filter backdrop-blur-sm"
-          >
-            <span className="text-sm font-medium">Login</span>
-          </Link>
           <Button
             variant="outline"
             size="sm"
             className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"
           >
-            Register
+            Connect Xellar Kit
           </Button>
         </div>
       </div>
