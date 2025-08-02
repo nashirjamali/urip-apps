@@ -2,7 +2,6 @@ import { BoxReveal } from "@/components/magicui/box-reveal";
 import { Particles } from "@/components/magicui/particles";
 import { Ripple } from "@/components/magicui/ripple";
 import { ShinyButton } from "@/components/magicui/shiny-button";
-import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import React from "react";
 
