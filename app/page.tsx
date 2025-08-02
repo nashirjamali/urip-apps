@@ -14,13 +14,11 @@ import {
   Zap,
   Eye,
   Coins,
-  Code,
-  Layers,
-  Network,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/ui/Header/Header";
-import { HeroSection } from "@/components/partials/LandingPage/HeroSection";
+import HeroSection from "@/components/partials/LandingPage/HeroSection";
+import LiskSection from "@/components/partials/LandingPage/LiskSection";
 
 export default function HomePage() {
   return (
@@ -28,114 +26,8 @@ export default function HomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
         <HeroSection />
-
-        {/* Lisk Integration Section */}
-        <section
-          id="lisk"
-          className="w-full py-12 md:py-24 lg:py-32 bg-[#F77A0E] text-white border-b-2 border-[#F77A0E]"
-        >
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="text-center space-y-4 mb-12">
-              <Badge className="bg-white text-[#F77A0E] border-2 border-white">
-                Powered by Lisk
-              </Badge>
-              <h2 className="text-3xl font-bold tracking-tighter text-white">
-                Built on Lisk's Layer 2 Infrastructure
-              </h2>
-              <p className="mx-auto max-w-[700px] text-white md:text-lg opacity-90">
-                URIP leverages Lisk's advanced blockchain technology to provide
-                seamless, scalable, and developer-friendly DeFi solutions
-              </p>
-            </div>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              <Card className="border-2 border-white bg-white/10 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-white rounded-sm flex items-center justify-center mb-4">
-                    <Code className="h-6 w-6 text-[#F77A0E]" />
-                  </div>
-                  <CardTitle className="text-white">JavaScript SDK</CardTitle>
-                  <CardDescription className="text-white/80">
-                    Built with Lisk's JavaScript/TypeScript SDK for rapid
-                    development
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-white/90 text-sm">
-                    Utilizing familiar programming languages to accelerate
-                    development and reduce technical barriers for our team
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-white bg-white/10 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-white rounded-sm flex items-center justify-center mb-4">
-                    <Layers className="h-6 w-6 text-[#F77A0E]" />
-                  </div>
-                  <CardTitle className="text-white">Layer 2 Scaling</CardTitle>
-                  <CardDescription className="text-white/80">
-                    Leveraging Lisk's Ethereum-compatible Layer 2 solution
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-white/90 text-sm">
-                    Fast transactions, low fees, and full EVM compatibility for
-                    seamless DeFi operations
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-white bg-white/10 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-white rounded-sm flex items-center justify-center mb-4">
-                    <Network className="h-6 w-6 text-[#F77A0E]" />
-                  </div>
-                  <CardTitle className="text-white">
-                    Modular Architecture
-                  </CardTitle>
-                  <CardDescription className="text-white/80">
-                    Utilizing Lisk's modular blockchain design for flexibility
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-white/90 text-sm">
-                    Customizable modules for asset tokenization, governance, and
-                    cross-chain interoperability
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            <div className="mt-12 p-6 border-2 border-white bg-white/5 backdrop-blur-sm rounded-lg">
-              <h3 className="text-xl font-bold text-white mb-4">
-                🚀 Lisk Technology Stack
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <h4 className="font-semibold text-white mb-2">
-                    Developer Tools:
-                  </h4>
-                  <ul className="space-y-1 text-sm text-white/90">
-                    <li>• Lisk SDK for custom blockchain applications</li>
-                    <li>• JavaScript/TypeScript development environment</li>
-                    <li>• Comprehensive documentation and tutorials</li>
-                    <li>• Command-line tools (Lisk Commander)</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-white mb-2">
-                    Infrastructure Benefits:
-                  </h4>
-                  <ul className="space-y-1 text-sm text-white/90">
-                    <li>• Delegated Proof of Stake consensus</li>
-                    <li>• Cross-chain interoperability</li>
-                    <li>• Mobile-first design philosophy</li>
-                    <li>• High-growth market optimization</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <LiskSection />
 
         {/* Problem & Solution */}
         <section

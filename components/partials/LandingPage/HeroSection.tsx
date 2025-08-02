@@ -146,110 +146,112 @@ const EnhancedSpotlightCard = ({
   </div>
 );
 
-export const HeroSection = () => (
-  <div className="min-h-screen bg-black text-white relative overflow-hidden">
-    <div className="absolute w-screen h-screen">
-      <Aurora colorStops={["#F77A0E", "#FF94B4", "#FF3232"]} />
-    </div>
+export default function HeroSection() {
+  return (
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      <div className="absolute w-screen h-screen">
+        <Aurora colorStops={["#F77A0E", "#FF94B4", "#FF3232"]} />
+      </div>
 
-    {/* Content Container */}
-    <div className="relative z-10 pt-28">
-      {/* Hero Section */}
-      <section className="w-full py-12 md:py-16 lg:py-24">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="flex flex-col items-center space-y-6 text-center">
-            <Badge className="bg-white/10 text-white border border-white/20 px-6 py-2 backdrop-blur-sm">
-              Leading DeFi Platform for Traditional Assets
-            </Badge>
-            <div className="space-y-8">
-              <BlurText
-                text="Democratizing Global Investment with Blockchain"
-                className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-white"
-              />
-              <p className="mx-auto max-w-[700px] text-gray-300 md:text-xl leading-relaxed">
-                URIP bridges traditional finance and DeFi, providing easy,
-                transparent, and cost-effective global investment access to
-                everyone.
+      {/* Content Container */}
+      <div className="relative z-10 pt-28">
+        {/* Hero Section */}
+        <section className="w-full py-12 md:py-16 lg:py-24">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="flex flex-col items-center space-y-6 text-center">
+              <Badge className="bg-white/10 text-white border border-white/20 px-6 py-2 backdrop-blur-sm">
+                Leading DeFi Platform for Traditional Assets
+              </Badge>
+              <div className="space-y-8">
+                <BlurText
+                  text="Democratizing Global Investment with Blockchain"
+                  className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-white"
+                />
+                <p className="mx-auto max-w-[700px] text-gray-300 md:text-xl leading-relaxed">
+                  URIP bridges traditional finance and DeFi, providing easy,
+                  transparent, and cost-effective global investment access to
+                  everyone.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <ShinyButton className="bg-white">
+                  <p className="text-black">Start Investing</p>
+                </ShinyButton>
+                <ShinyButton className="bg-black">
+                  <p className="text-white">Learn More</p>
+                </ShinyButton>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Supported Tokens Marquee Section */}
+        <section className="w-full py-12">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Live Tokenized Assets
+              </h3>
+              <p className="text-white/70">
+                Trade real-world assets on the blockchain with full transparency
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <ShinyButton className="bg-white">
-                <p className="text-black">Start Investing</p>
-              </ShinyButton>
-              <ShinyButton className="bg-black">
-                <p className="text-white">Learn More</p>
-              </ShinyButton>
+
+            {/* Marquee Container */}
+            <div className="relative">
+              {/* First Row - Left to Right */}
+              <Marquee className="[--duration:40s] py-4" pauseOnHover>
+                {supportedTokens.slice(0, 5).map((token, index) => (
+                  <TokenCard key={`row1-${index}`} token={token} />
+                ))}
+              </Marquee>
+            </div>
+
+            {/* Additional Info */}
+            <div className="text-center mt-8">
+              <p className="text-white/60 text-sm">
+                All tokens are backed 1:1 by real assets held in secure custody
+              </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Supported Tokens Marquee Section */}
-      <section className="w-full py-12">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-white mb-2">
-              Live Tokenized Assets
-            </h3>
-            <p className="text-white/70">
-              Trade real-world assets on the blockchain with full transparency
-            </p>
+        {/* Stats Section */}
+        <section className="w-full py-12 md:py-16 lg:py-24">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+              <EnhancedSpotlightCard icon={TrendingUp}>
+                <div className="text-4xl font-bold bg-gradient-to-r from-[#F77A0E] to-[#FF94B4] bg-clip-text text-transparent">
+                  $<CountUp from={0} to={100} />
+                  M+
+                </div>
+                <div className="text-sm text-gray-300 font-medium">
+                  Target Total Value Locked
+                </div>
+              </EnhancedSpotlightCard>
+
+              <EnhancedSpotlightCard icon={Shield}>
+                <div className="text-4xl font-bold bg-gradient-to-r from-[#F77A0E] to-[#FF94B4] bg-clip-text text-transparent">
+                  <CountUp from={0} to={10} />
+                </div>
+                <div className="text-sm text-gray-300 font-medium">
+                  Supported Traditional Assets
+                </div>
+              </EnhancedSpotlightCard>
+
+              <EnhancedSpotlightCard icon={Zap}>
+                <div className="text-4xl font-bold bg-gradient-to-r from-[#F77A0E] to-[#FF94B4] bg-clip-text text-transparent">
+                  <CountUp from={0} to={100} />
+                  K+
+                </div>
+                <div className="text-sm text-gray-300 font-medium">
+                  Target Active Users
+                </div>
+              </EnhancedSpotlightCard>
+            </div>
           </div>
-
-          {/* Marquee Container */}
-          <div className="relative">
-            {/* First Row - Left to Right */}
-            <Marquee className="[--duration:40s] py-4" pauseOnHover>
-              {supportedTokens.slice(0, 5).map((token, index) => (
-                <TokenCard key={`row1-${index}`} token={token} />
-              ))}
-            </Marquee>
-          </div>
-
-          {/* Additional Info */}
-          <div className="text-center mt-8">
-            <p className="text-white/60 text-sm">
-              All tokens are backed 1:1 by real assets held in secure custody
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="w-full py-12 md:py-16 lg:py-24">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <EnhancedSpotlightCard icon={TrendingUp}>
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#F77A0E] to-[#FF94B4] bg-clip-text text-transparent">
-                $<CountUp from={0} to={100} />
-                M+
-              </div>
-              <div className="text-sm text-gray-300 font-medium">
-                Target Total Value Locked
-              </div>
-            </EnhancedSpotlightCard>
-
-            <EnhancedSpotlightCard icon={Shield}>
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#F77A0E] to-[#FF94B4] bg-clip-text text-transparent">
-                <CountUp from={0} to={10} />
-              </div>
-              <div className="text-sm text-gray-300 font-medium">
-                Supported Traditional Assets
-              </div>
-            </EnhancedSpotlightCard>
-
-            <EnhancedSpotlightCard icon={Zap}>
-              <div className="text-4xl font-bold bg-gradient-to-r from-[#F77A0E] to-[#FF94B4] bg-clip-text text-transparent">
-                <CountUp from={0} to={100} />
-                K+
-              </div>
-              <div className="text-sm text-gray-300 font-medium">
-                Target Active Users
-              </div>
-            </EnhancedSpotlightCard>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
-  </div>
-);
+  );
+}
