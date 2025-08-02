@@ -13,6 +13,7 @@ import Header from "@/components/ui/Header/Header";
 import HeroSection from "@/components/partials/LandingPage/HeroSection";
 import LiskSection from "@/components/partials/LandingPage/LiskSection";
 import ProblemSection from "@/components/partials/LandingPage/ProblemSection";
+import TrackInvestment from "@/components/partials/LandingPage/TrackInvestment";
 
 export default function HomePage() {
   return (
@@ -23,112 +24,7 @@ export default function HomePage() {
         <HeroSection />
         <LiskSection />
         <ProblemSection />
-
-        {/* Dual Track Investment */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 border-b-2 border-[#F77A0E]">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="text-center space-y-4 mb-12">
-              <h2 className="text-3xl font-bold tracking-tighter text-black">
-                Two Investment Tracks
-              </h2>
-              <p className="mx-auto max-w-[600px] text-black md:text-lg">
-                Choose the investment strategy that suits your needs and
-                preferences
-              </p>
-            </div>
-            <div className="grid gap-8 lg:grid-cols-2">
-              <Card className="border-2 border-[#F77A0E] bg-white">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mb-4">
-                    <Coins className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-black">
-                    Track 1: Direct Asset Investment
-                  </CardTitle>
-                  <CardDescription className="text-black">
-                    Buy tokens representing individual assets with full
-                    ownership transparency
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-black">
-                      Available Assets:
-                    </h4>
-                    <ul className="space-y-1 text-sm text-black">
-                      <li>• Tokenized Stocks (AAPL, TSLA, GOOGL)</li>
-                      <li>• Commodities (Gold, Silver, Oil)</li>
-                      <li>• Real Estate (Fractional ownership)</li>
-                      <li>• Bonds (Government & Corporate)</li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-[#F77A0E] bg-white">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-[#F77A0E] rounded-sm flex items-center justify-center mb-4">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-black">
-                    Track 2: DAO-Managed Fund Investment
-                  </CardTitle>
-                  <CardDescription className="text-black">
-                    Invest in diversified portfolios through $URIP tokens
-                    managed by decentralized community governance
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 border-2 border-[#F77A0E] bg-gray-100">
-                    <h4 className="font-bold text-black mb-2">
-                      🏛️ DAO GOVERNANCE FEATURES:
-                    </h4>
-                    <ul className="space-y-2 text-sm text-black">
-                      <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
-                        <span>
-                          <strong>Democratic Voting:</strong> Community decides
-                          investment strategies
-                        </span>
-                      </li>
-                      <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
-                        <span>
-                          <strong>Proposal System:</strong> Submit & vote on
-                          rebalancing decisions
-                        </span>
-                      </li>
-                      <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
-                        <span>
-                          <strong>Transparent Governance:</strong> All decisions
-                          recorded on-chain
-                        </span>
-                      </li>
-                      <li className="flex items-start space-x-2">
-                        <div className="w-1 h-1 bg-[#F77A0E] rounded-full mt-2"></div>
-                        <span>
-                          <strong>Token-Based Voting:</strong> Voting power
-                          based on $URIP holdings
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-black">
-                      Additional Features:
-                    </h4>
-                    <ul className="space-y-1 text-sm text-black">
-                      <li>• Professional Management via DAO</li>
-                      <li>• Auto-Rebalancing based on community votes</li>
-                      <li>• Real-time Performance Tracking</li>
-                      <li>• Quarterly governance meetings</li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
+        <TrackInvestment />
 
         {/* Core Features */}
         <section
