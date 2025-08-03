@@ -44,7 +44,7 @@ function TradePageContent() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<"all" | "stock" | "crypto" | "commodity">("all")
-  const [sortBy, setSortBy] = useState<"name" | "price" | "marketCap" | "supply" | "type" | "status">("name")
+  const [sortBy, setSortBy] = useState<"name" | "currentPrice" | "marketCap" | "supply" | "type" | "status">("name")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
   
   const { address } = useAccount()
@@ -69,66 +69,28 @@ function TradePageContent() {
   const handleSortChange = (newSortBy: typeof sortBy) => {
     if (sortBy === newSortBy) {
       // Toggle sort order if clicking the same column
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
     } else {
-      // Set new sort column and default to ascending
-      setSortBy(newSortBy);
-      setSortOrder("asc");
+      setSortBy(newSortBy)
+      setSortOrder("asc")
     }
-  };
+  }
 
-  // Filter and sort tokens
-  const filteredTokens = assetTokens
-    .filter(token => {
-      const matchesSearch = token.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           token.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      // Debug: Log the asset type to see what we're getting
-      console.log(`Token ${token.symbol}: assetType = "${token.assetType}", info.type = "${token.info.type}", filterType = "${filterType}"`)
-      
-      // Fix the filter logic to handle case sensitivity properly
-      let matchesFilter = true
-      if (filterType !== "all") {
-        // Try to get asset type from contract first, fallback to token info
-        const contractAssetType = token.assetType?.toLowerCase() || ""
-        const infoAssetType = token.info.type?.toLowerCase() || ""
-        const filterValue = filterType.toLowerCase()
-        
-        // More robust matching - handle different possible values
-        let tokenType = contractAssetType || infoAssetType
-        
-        if (filterValue === "stock") {
-          matchesFilter = tokenType === "stock" || tokenType === "stocks"
-        } else if (filterValue === "commodity") {
-          matchesFilter = tokenType === "commodity" || tokenType === "commodities"
-        } else {
-          matchesFilter = tokenType === filterValue
-        }
-        
-        console.log(`Filtering ${token.symbol}: contractType="${contractAssetType}", infoType="${infoAssetType}", filter="${filterValue}" = ${matchesFilter}`)
-      }
-      
+  // Filter and sort assets
+  const filteredAndSortedAssets = assetTokens
+    ?.filter((asset) => {
+      const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesFilter = filterType === "all" || asset.assetType === filterType
       return matchesSearch && matchesFilter
     })
     .sort((a, b) => {
       let aValue: any, bValue: any
       
       switch (sortBy) {
-        case "name":
-          aValue = a.name
-          bValue = b.name
-          break
-        case "price":
-          aValue = parseFloat(a.currentPrice)
-          bValue = parseFloat(b.currentPrice)
-          break
-        case "marketCap":
-          aValue = parseFloat(a.totalSupply) * parseFloat(a.currentPrice)
-          bValue = parseFloat(b.totalSupply) * parseFloat(b.currentPrice)
-          break
-        case "supply":
-          aValue = parseFloat(a.totalSupply)
-          bValue = parseFloat(b.totalSupply)
+        case "currentPrice":
+          aValue = parseFloat(a.currentPrice || "0")
+          bValue = parseFloat(b.currentPrice || "0")
           break
         case "type":
           aValue = a.assetType
@@ -150,19 +112,17 @@ function TradePageContent() {
       }
     })
 
-
-
   const handleTokenSelect = (token: AssetTokenData) => {
     // Navigate to the token detail page
     router.push(`/trade/${token.symbol}`)
   }
 
-  const formatPrice = (price: string) => {
-    return parseFloat(price).toFixed(2)
+  const formatcurrentPrice = (currentPrice: string) => {
+    return parseFloat(currentPrice).toFixed(2)
   }
 
-  const formatMarketCap = (supply: string, price: string) => {
-    const marketCap = parseFloat(supply) * parseFloat(price)
+  const formatMarketCap = (supply: string, currentPrice: string) => {
+    const marketCap = parseFloat(supply) * parseFloat(currentPrice)
     if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(2)}B`
     if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(2)}M`
     if (marketCap >= 1e3) return `$${(marketCap / 1e3).toFixed(2)}K`
@@ -170,16 +130,28 @@ function TradePageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <Navigation />
+    // Updated main container with landing page theme - black background with orange accents
+    <div className="min-h-screen bg-black text-white relative">
+      {/* Background Effects - Similar to landing page with orange accents */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#F77A0E]/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-[#E6690D]/8 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-[#FF8C00]/5 rounded-full blur-3xl animate-pulse"></div>
+        
+        {/* Additional gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900/30 to-black opacity-80"></div>
+      </div>
+      
+      <div className="relative z-10">
+        <Navigation />
 
-      <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-3xl font-bold text-white mb-2">Trade Markets</h1>
-                <p className="text-gray-400">Discover and trade tokenized assets</p>
+                <p className="text-gray-300">Discover and trade tokenized assets</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button 
@@ -187,6 +159,7 @@ function TradePageContent() {
                   size="sm"
                   onClick={() => refetch()}
                   disabled={assetsLoading}
+                  className="border-[#F77A0E]/50 text-[#F77A0E] hover:bg-[#F77A0E]/10 hover:border-[#F77A0E]"
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${assetsLoading ? 'animate-spin' : ''}`} />
                   Refresh
@@ -194,420 +167,413 @@ function TradePageContent() {
               </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Stats Cards - Updated with orange theme */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <Card className="bg-gray-800/50 border-gray-700/50">
+              <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm hover:border-[#F77A0E]/50 transition-all duration-300">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">Total Assets</p>
                       <p className="text-2xl font-bold text-white">
-                        {assetsLoading ? "..." : assetTokens.length}
+                        {assetsLoading ? (
+                          <div className="h-8 w-16 bg-gray-800/50 rounded animate-pulse"></div>
+                        ) : (
+                          assetTokens?.length || 0
+                        )}
                       </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center">
-                      <Coins className="h-5 w-5 text-blue-400" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
+                      <Coins className="h-5 w-5 text-white" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              
-              <Card className="bg-gray-800/50 border-gray-700/50">
+
+              <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm hover:border-[#F77A0E]/50 transition-all duration-300">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">Portfolio Value</p>
                       <p className="text-2xl font-bold text-white">
-                        {assetsLoading ? "..." : `$${totalPortfolioValue.toFixed(2)}`}
+                        {assetsLoading ? (
+                          <div className="h-8 w-20 bg-gray-800/50 rounded animate-pulse"></div>
+                        ) : (
+                          `$${totalPortfolioValue ? parseFloat(totalPortfolioValue.toString()).toFixed(2) : '0.00'}`
+                        )}
                       </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-green-600/20 flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-green-400" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
+                      <DollarSign className="h-5 w-5 text-white" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              
-              <Card className="bg-gray-800/50 border-gray-700/50">
+
+              <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm hover:border-[#F77A0E]/50 transition-all duration-300">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">Active Holdings</p>
+                      <p className="text-sm text-gray-400">Active Trades</p>
                       <p className="text-2xl font-bold text-white">
-                        {assetsLoading ? "..." : userHoldings.filter(h => parseFloat(h.balance) > 0).length}
+                        {transactionsLoading ? (
+                          <div className="h-8 w-8 bg-gray-800/50 rounded animate-pulse"></div>
+                        ) : (
+                          recentTransactions?.length || 0
+                        )}
                       </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-purple-600/20 flex items-center justify-center">
-                      <BarChart3 className="h-5 w-5 text-purple-400" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-white" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              
-              <Card className="bg-gray-800/50 border-gray-700/50">
+
+              <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm hover:border-[#F77A0E]/50 transition-all duration-300">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">Recent Activity</p>
-                      <p className="text-2xl font-bold text-white">
-                        {transactionsLoading ? "..." : recentTransactions.length}
-                      </p>
+                      <p className="text-sm text-gray-400">Total Volume</p>
+                      <p className="text-2xl font-bold text-white">$1.2M</p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-amber-600/20 flex items-center justify-center">
-                      <Clock className="h-5 w-5 text-amber-400" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-white" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </div>
 
-          {/* Filters and Search */}
-          <div className="mb-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="relative flex-1 max-w-md">
+            {/* Search and Filter Controls - Updated theme */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Search tokens..."
+                    placeholder="Search assets..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder-gray-400"
+                    className="pl-10 bg-gray-900/50 border-[#F77A0E]/20 text-white placeholder:text-gray-400 focus:border-[#F77A0E]/50"
                   />
                 </div>
-                
+              </div>
+              <div className="flex gap-3">
                 <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
-                  <SelectTrigger className="w-32 bg-gray-800/50 border-gray-700/50 text-white">
-                    <SelectValue />
+                  <SelectTrigger className="w-40 bg-gray-900/50 border-[#F77A0E]/20 text-white focus:border-[#F77A0E]/50">
+                    <SelectValue placeholder="Filter" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="stock">Stocks</SelectItem>
-                    <SelectItem value="commodity">Commodities</SelectItem>
+                  <SelectContent className="bg-gray-900 border-[#F77A0E]/20">
+                    <SelectItem value="all" className="text-white hover:bg-[#F77A0E]/10">All Assets</SelectItem>
+                    <SelectItem value="stock" className="text-white hover:bg-[#F77A0E]/10">Stocks</SelectItem>
+                    <SelectItem value="crypto" className="text-white hover:bg-[#F77A0E]/10">Crypto</SelectItem>
+                    <SelectItem value="commodity" className="text-white hover:bg-[#F77A0E]/10">Commodities</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid3X3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
+                <div className="flex border border-[#F77A0E]/20 rounded-lg p-1 bg-gray-900/50">
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                    className={viewMode === "grid" ? "bg-[#F77A0E] hover:bg-[#E6690D] text-white" : "text-gray-400 hover:text-white hover:bg-[#F77A0E]/10"}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className={viewMode === "list" ? "bg-[#F77A0E] hover:bg-[#E6690D] text-white" : "text-gray-400 hover:text-white hover:bg-[#F77A0E]/10"}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Tokenized Assets List with Slider */}
-          {assetsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <Card key={index} className="bg-gray-800/30 border-gray-700/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-600/50 animate-pulse"></div>
-                      <div className="w-16 h-4 bg-gray-600/50 rounded animate-pulse"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="w-24 h-4 bg-gray-600/50 rounded animate-pulse"></div>
-                      <div className="w-20 h-3 bg-gray-600/30 rounded animate-pulse"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : viewMode === "grid" ? (
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <Coins className="h-5 w-5 text-blue-400" />
-                Tokenized Assets
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs font-medium px-2 py-1">
-                  {filteredTokens.length} {filteredTokens.length === 1 ? 'Asset' : 'Assets'}
-                </Badge>
-              </h2>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                {filteredTokens.map((token) => {
-                  const userHolding = userHoldings.find(h => h.info.address === token.info.address)
-                  const userBalance = userHolding ? parseFloat(userHolding.balance) : 0
-                  const marketCap = parseFloat(token.totalSupply) * parseFloat(token.currentPrice)
-                  
-                  return (
-                    <Card 
-                      key={token.info.address}
-                      className="group relative bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm border border-gray-700/50 hover:border-blue-500/30 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10 overflow-hidden"
-                      onClick={() => handleTokenSelect(token)}
-                    >
-                      {/* Background decoration */}
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-bl-full"></div>
-                      
-                      {/* Status indicator */}
-                      <div className={`absolute top-3 left-3 w-2 h-2 rounded-full ${token.isActive ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
-                      
-                      <CardContent className="p-6 relative z-10">
-                        {/* Header with logo and type */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`relative w-12 h-12 rounded-xl ${
-                              token.assetType === 'STOCK' ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 
-                              token.assetType === 'CRYPTO' ? 'bg-gradient-to-br from-amber-500 to-orange-500' : 
-                              'bg-gradient-to-br from-green-500 to-emerald-600'
-                            } flex items-center justify-center text-white font-bold text-sm shadow-lg`}>
-                              {token.symbol.substring(0, 2)}
-                              <div className="absolute inset-0 rounded-xl bg-white/10"></div>
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">
-                                {token.name}
-                              </h3>
-                              <p className="text-sm text-gray-400">{token.symbol}</p>
-                            </div>
+          {/* Assets Display */}
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {assetsLoading ? (
+                // Loading skeleton with orange theme
+                Array.from({ length: 8 }).map((_, i) => (
+                  <Card key={i} className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm">
+                    <CardContent className="p-6">
+                      <div className="animate-pulse space-y-4">
+                        <div className="h-10 w-10 bg-gray-800/50 rounded-lg"></div>
+                        <div className="h-4 bg-gray-800/50 rounded w-3/4"></div>
+                        <div className="h-6 bg-gray-800/50 rounded w-1/2"></div>
+                        <div className="h-8 bg-[#F77A0E]/20 rounded"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : filteredAndSortedAssets?.length === 0 ? (
+                <div className="col-span-full">
+                  <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm">
+                    <CardContent className="p-8 text-center">
+                      <AlertCircle className="h-12 w-12 text-[#F77A0E] mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-white mb-2">No assets found</h3>
+                      <p className="text-gray-400 mb-4">Try adjusting your search or filter criteria</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                filteredAndSortedAssets?.map((token) => (
+                  <Card 
+                    key={token.symbol} 
+                    className="group bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm hover:border-[#F77A0E]/50 transition-all duration-300 hover:bg-gray-900 cursor-pointer"
+                    onClick={() => handleTokenSelect(token)}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                              {token.symbol.substring(0, 2).toUpperCase()}
+                            </span>
                           </div>
-                          <Badge 
-                            className={`${
-                              token.assetType === 'STOCK' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                              token.assetType === 'CRYPTO' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                              'bg-green-500/20 text-green-400 border-green-500/30'
-                            } border text-xs font-medium`}
-                          >
+                          <div>
+                            <h3 className="font-medium text-white group-hover:text-[#F77A0E] transition-colors">
+                              {token.name}
+                            </h3>
+                            <p className="text-sm text-gray-400">{token.symbol}</p>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs border-[#F77A0E]/30 ${
+                            token.isActive 
+                              ? 'text-green-400 bg-green-400/10' 
+                              : 'text-red-400 bg-red-400/10'
+                          }`}
+                        >
+                          {token.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-400">currentPrice</span>
+                          <span className="text-sm font-medium text-white">
+                            ${formatcurrentPrice(token.currentPrice)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-400">Type</span>
+                          <Badge variant="secondary" className="text-xs bg-[#F77A0E]/10 text-[#F77A0E] border-[#F77A0E]/20">
                             {token.assetType}
                           </Badge>
                         </div>
-                        
-                        
-                        {/* User holdings */}
-                        {userBalance > 0 && (
-                          <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-green-400 font-medium">Your Holdings</span>
-                              <span className="text-sm text-green-400 font-bold">
-                                {userBalance.toFixed(2)} {token.symbol}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              Value: ${(userBalance * parseFloat(token.currentPrice)).toFixed(2)}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Supply and status */}
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-400">Supply:</span>
-                            <span className="text-gray-300 font-medium">
-                              {parseFloat(token.totalSupply).toLocaleString()}
-                            </span>
-                          </div>
-                          <Badge 
-                            className={`${
-                              token.isActive 
-                                ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                                : 'bg-red-500/20 text-red-400 border-red-500/30'
-                            } border text-xs`}
-                          >
-                            {token.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
-                        
-                        {/* Action button */}
-                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                          <Button
-                            size="sm"
-                            className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTokenSelect(token);
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Trade
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-              
-              {filteredTokens.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-gray-700/50 flex items-center justify-center mx-auto mb-4">
-                    <Search className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-300 mb-2">No tokens found</h3>
-                  <p className="text-gray-400 text-sm">
-                    Try adjusting your search or filter criteria.
-                  </p>
-                </div>
+                      </div>
+
+                      <Button 
+                        className="w-full bg-gradient-to-r from-[#F77A0E] to-[#E6690D] hover:from-[#E6690D] hover:to-[#D55C0D] text-white border-none group-hover:scale-105 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleTokenSelect(token)
+                        }}
+                      >
+                        Trade Now
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
               )}
             </div>
           ) : (
-            <div className="bg-gray-800/50 backdrop-blur-sm shadow-lg rounded-xl border border-gray-700/50 p-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-bl-full"></div>
+            // List view with updated orange theme
+            <div className="bg-gray-900/80 backdrop-blur-sm shadow-lg rounded-xl border border-[#F77A0E]/20 p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-[#F77A0E]/5 rounded-bl-full"></div>
               
-                             {/* Enhanced Table Header */}
-               <div className="overflow-x-auto rounded-lg border border-gray-700/30">
-                 <table className="w-full">
-                   <thead>
-                     <tr className="bg-gray-800/50">
-                       <th 
-                         className="text-left py-3 px-4 cursor-pointer hover:bg-gray-700/30 border-b border-gray-700/30"
-                         onClick={() => handleSortChange("name")}
-                       >
-                         <div className="flex items-center">
-                           <span className="font-medium text-gray-400">Asset</span>
-                           {sortBy === "name" && (
-                             <span className="ml-1 text-blue-400">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                           )}
-                         </div>
-                       </th>
-                       <th 
-                         className="text-right py-3 px-4 cursor-pointer hover:bg-gray-700/30 border-b border-gray-700/30"
-                         onClick={() => handleSortChange("price")}
-                       >
-                         <div className="flex items-center justify-end">
-                           <span className="font-medium text-gray-400">Price (USD)</span>
-                           {sortBy === "price" && (
-                             <span className="ml-1 text-blue-400">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                           )}
-                         </div>
-                       </th>
-                       <th 
-                         className="text-right py-3 px-4 cursor-pointer hover:bg-gray-700/30 border-b border-gray-700/30"
-                         onClick={() => handleSortChange("marketCap")}
-                       >
-                         <div className="flex items-center justify-end">
-                           <span className="font-medium text-gray-400">Market Cap</span>
-                           {sortBy === "marketCap" && (
-                             <span className="ml-1 text-blue-400">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                           )}
-                         </div>
-                       </th>
-                       <th 
-                         className="text-left py-3 px-4 cursor-pointer hover:bg-gray-700/30 border-b border-gray-700/30"
-                         onClick={() => handleSortChange("type")}
-                       >
-                         <div className="flex items-center">
-                           <span className="font-medium text-gray-400">Type</span>
-                           {sortBy === "type" && (
-                             <span className="ml-1 text-blue-400">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                           )}
-                         </div>
-                       </th>
-                       <th 
-                         className="text-left py-3 px-4 cursor-pointer hover:bg-gray-700/30 border-b border-gray-700/30"
-                         onClick={() => handleSortChange("status")}
-                       >
-                         <div className="flex items-center">
-                           <span className="font-medium text-gray-400">Status</span>
-                           {sortBy === "status" && (
-                             <span className="ml-1 text-blue-400">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                           )}
-                         </div>
-                       </th>
-                       <th className="text-center py-3 px-4 border-b border-gray-700/30 font-medium text-gray-400">Your Holdings</th>
-                       <th className="text-center py-3 px-4 border-b border-gray-700/30 font-medium text-gray-400">Action</th>
-                     </tr>
-                   </thead>
+              {/* Enhanced Table Header */}
+              <div className="overflow-x-auto rounded-lg border border-[#F77A0E]/30">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-900/50">
+                      <th 
+                        className="text-left py-3 px-4 cursor-pointer hover:bg-[#F77A0E]/10 border-b border-[#F77A0E]/30 transition-colors"
+                        onClick={() => handleSortChange("name")}
+                      >
+                        <div className="flex items-center">
+                          <span className="font-medium text-gray-300">Asset</span>
+                          {sortBy === "name" && (
+                            <span className="ml-1 text-[#F77A0E]">{sortOrder === "asc" ? "↑" : "↓"}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-right py-3 px-4 cursor-pointer hover:bg-[#F77A0E]/10 border-b border-[#F77A0E]/30 transition-colors"
+                        onClick={() => handleSortChange("currentPrice")}
+                      >
+                        <div className="flex items-center justify-end">
+                          <span className="font-medium text-gray-300">currentPrice (USD)</span>
+                          {sortBy === "currentPrice" && (
+                            <span className="ml-1 text-[#F77A0E]">{sortOrder === "asc" ? "↑" : "↓"}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="text-right py-3 px-4 cursor-pointer hover:bg-[#F77A0E]/10 border-b border-[#F77A0E]/30 transition-colors"
+                        onClick={() => handleSortChange("marketCap")}
+                      >
+                        <div className="flex items-center justify-end">
+                          <span className="font-medium text-gray-300">Market Cap</span>
+                          {sortBy === "marketCap" && (
+                            <span className="ml-1 text-[#F77A0E]">{sortOrder === "asc" ? "↑" : "↓"}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th className="text-center py-3 px-4 font-medium text-gray-300 border-b border-[#F77A0E]/30">Type</th>
+                      <th className="text-center py-3 px-4 font-medium text-gray-300 border-b border-[#F77A0E]/30">Status</th>
+                      <th className="text-center py-3 px-4 font-medium text-gray-300 border-b border-[#F77A0E]/30">Actions</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {filteredTokens.map((token) => {
-                      const userHolding = userHoldings.find(h => h.info.address === token.info.address)
-                      const userBalance = userHolding ? parseFloat(userHolding.balance) : 0
-                      
-                      return (
-                        <tr 
-                          key={token.info.address}
-                          className="border-b border-gray-700/20 last:border-b-0 hover:bg-gray-700/20 transition-colors cursor-pointer"
-                          onClick={() => handleTokenSelect(token)}
-                        >
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              <div className="font-medium text-white">{token.name}</div>
-                              <div className="text-xs text-gray-400 ml-2">{token.symbol}</div>
-                              {token.isActive && (
-                                <Badge className="ml-2 bg-green-500/20 text-green-400 border-transparent text-xs">
-                                  Live
-                                </Badge>
-                              )}
+                    {assetsLoading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i} className="border-b border-[#F77A0E]/10">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-gray-800/50 rounded-lg animate-pulse"></div>
+                              <div className="space-y-2">
+                                <div className="h-4 bg-gray-800/50 rounded w-24 animate-pulse"></div>
+                                <div className="h-3 bg-gray-800/50 rounded w-16 animate-pulse"></div>
+                              </div>
                             </div>
                           </td>
-                          <td className="text-right py-3 px-4 font-medium text-white">
-                            ${formatPrice(token.currentPrice)}
+                          <td className="py-4 px-4">
+                            <div className="h-4 bg-gray-800/50 rounded w-16 ml-auto animate-pulse"></div>
                           </td>
-                          <td className="text-right py-3 px-4 text-gray-400">
-                            {formatMarketCap(token.totalSupply, token.currentPrice)}
+                          <td className="py-4 px-4">
+                            <div className="h-4 bg-gray-800/50 rounded w-20 ml-auto animate-pulse"></div>
                           </td>
-                          <td className="text-right py-3 px-4 text-gray-400">
-                            {parseFloat(token.totalSupply).toLocaleString()}
+                          <td className="py-4 px-4">
+                            <div className="h-6 bg-gray-800/50 rounded w-16 mx-auto animate-pulse"></div>
                           </td>
-                          <td className="py-3 px-4">
-                            <Badge
-                              className={`${token.assetType === 'STOCK' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'} border-transparent`}
-                            >
+                          <td className="py-4 px-4">
+                            <div className="h-6 bg-gray-800/50 rounded w-16 mx-auto animate-pulse"></div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="h-8 bg-gray-800/50 rounded w-20 mx-auto animate-pulse"></div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : filteredAndSortedAssets?.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center">
+                          <AlertCircle className="h-8 w-8 text-[#F77A0E] mx-auto mb-3" />
+                          <p className="text-gray-400">No assets found matching your criteria</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredAndSortedAssets?.map((token) => (
+                        <tr 
+                          key={token.symbol} 
+                          className="border-b border-[#F77A0E]/10 hover:bg-[#F77A0E]/5 transition-colors cursor-pointer"
+                          onClick={() => handleTokenSelect(token)}
+                        >
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
+                                <span className="text-white font-bold text-xs">
+                                  {token.symbol.substring(0, 2).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-medium text-white">{token.name}</div>
+                                <div className="text-sm text-gray-400">{token.symbol}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-right">
+                            <span className="font-medium text-white">
+                              ${formatcurrentPrice(token.currentPrice)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <Badge variant="secondary" className="bg-[#F77A0E]/10 text-[#F77A0E] border-[#F77A0E]/20">
                               {token.assetType}
                             </Badge>
                           </td>
-                          <td className="py-3 px-4">
-                            <Badge
-                              className={`${token.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} border-transparent`}
+                          <td className="py-4 px-4 text-center">
+                            <Badge 
+                              variant="outline" 
+                              className={`${
+                                token.isActive 
+                                  ? 'text-green-400 border-green-400/30 bg-green-400/10' 
+                                  : 'text-red-400 border-red-400/30 bg-red-400/10'
+                              }`}
                             >
                               {token.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </td>
-                          <td className="text-center py-3 px-4">
-                            {userBalance > 0 ? (
-                              <div>
-                                <div className="text-sm text-green-400 font-medium">
-                                  {userBalance.toFixed(2)} {token.symbol}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  ${(userBalance * parseFloat(token.currentPrice)).toFixed(2)}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-500 text-sm">No holdings</span>
-                            )}
-                          </td>
-                          <td className="text-center py-3 px-4">
-                            <Button
-                              variant="outline"
+                          <td className="py-4 px-4 text-center">
+                            <Button 
                               size="sm"
-                              className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20 transition-colors"
-                              disabled={!token.isActive}
+                              className="bg-gradient-to-r from-[#F77A0E] to-[#E6690D] hover:from-[#E6690D] hover:to-[#D55C0D] text-white border-none"
                               onClick={(e) => {
-                                e.stopPropagation();
-                                handleTokenSelect(token);
+                                e.stopPropagation()
+                                handleTokenSelect(token)
                               }}
                             >
-                              {token.isActive ? 'Trade' : 'Unavailable'}
+                              Trade
                             </Button>
                           </td>
                         </tr>
-                      )
-                    })}
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-
+          {/* Recent Activity Section - Updated with orange theme */}
+          {recentTransactions && recentTransactions.length > 0 && (
+            <div className="mt-8">
+              <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-white">
+                    <Clock className="h-5 w-5 mr-2 text-[#F77A0E]" />
+                    Recent Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentTransactions.slice(0, 5).map((tx, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 hover:bg-[#F77A0E]/10 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            tx.type === 1 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {tx.type === 1 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">
+                              {tx.type === 1 ? 'Bought' : 'Sold'}
+                            </p>
+                            <p className="text-sm text-gray-400">{tx.timestamp}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-white font-medium">${tx.value}</p>
+                          <p className={`text-sm ${tx.type === 1 ? 'text-green-400' : 'text-red-400'}`}>
+                            {tx.type === 1 ? '+' : '-'}{tx.value}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
-    )
-
+    </div>
+  )
 }
 
 export default function TradePage() {
@@ -616,4 +582,4 @@ export default function TradePage() {
       <TradePageContent />
     </ProtectedRoute>
   )
-} 
+}

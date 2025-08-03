@@ -57,7 +57,7 @@ export default function Header() {
         </div>
         <div className="flex items-center space-x-3">
           <Button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/login")}
             variant="outline"
             size="sm"
             className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"

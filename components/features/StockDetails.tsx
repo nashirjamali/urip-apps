@@ -179,7 +179,7 @@ export const StockDetails = ({ symbol, companyName, className = "" }: StockDetai
         ) : quote ? (
           <div className="space-y-6">
             {/* Current Price and Change */}
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="bg-black border-orange-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-lg font-semibold text-white">Current Price</h4>
                 <Badge className={`${getChangeColor(quote.d)} border-transparent`}>
