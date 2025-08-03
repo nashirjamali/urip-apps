@@ -225,7 +225,7 @@ function TokenDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
   // Loading State
   if (tokenLoading || assetsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="min-h-screen bg-black">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-8">
@@ -245,7 +245,7 @@ function TokenDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
   // Error State
   if (tokenError || !selectedToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="min-h-screen bg-black">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <Button 
@@ -283,7 +283,7 @@ function TokenDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-black">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
@@ -368,7 +368,7 @@ function TokenDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
               </CardContent>
             </Card>
             
-            <Card className="bg-gray-800/50 border-gray-700/50">
+            <Card className="bg-black border-orange-300">
               <CardHeader>
                 <CardTitle className="text-white">Market Information</CardTitle>
               </CardHeader>
