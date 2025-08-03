@@ -709,10 +709,10 @@ function DAOContent() {
                                     <p className="text-gray-400 text-sm">Based on your URIP tokens</p>
                                   </div>
                                 </div>
-                                <div className="text-right">
+                                {/* <div className="text-right">
                                   <div className="text-2xl font-bold text-white">{votingPower}</div>
                                   <div className="text-sm text-[#F77A0E]">URIP Tokens</div>
-                                </div>
+                                </div> */}
                               </div>
 
                               <div className="flex items-center gap-3">

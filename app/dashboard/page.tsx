@@ -43,6 +43,9 @@ const TradingViewWidget = dynamic(
   { ssr: false }
 );
 
+// Import Recharts for pie chart
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+
 // Mock data for demonstration
 const mockPortfolioData = {
   totalValue: 26960.98,
@@ -220,6 +223,49 @@ export default function DashboardPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Helper functions for portfolio allocation
+  const getSectorColor = (assetName: string) => {
+    // Assign different colors for each individual stock
+    const colorMap: { [key: string]: string } = {
+      'tMSFT': 'bg-[#F77A0E]', // Orange
+      'tAAPL': 'bg-blue-500', // Blue
+      'tGOOG': 'bg-green-500', // Green
+      'tD05': 'bg-purple-500', // Purple
+      'tBREN': 'bg-yellow-500', // Yellow
+      'tDELTA': 'bg-pink-500', // Pink
+      'tMAYBANK': 'bg-indigo-500', // Indigo
+      'tXAU': 'bg-amber-500', // Amber
+      'tXAG': 'bg-gray-500', // Gray
+      'tBTC': 'bg-orange-500', // Orange
+      'tETH': 'bg-cyan-500', // Cyan
+    };
+    
+    return colorMap[assetName] || 'bg-blue-500'; // Default blue for unknown assets
+  };
+
+  const getSectorName = (assetName: string) => {
+    // Return the asset name directly, or a formatted version
+    if (assetName) {
+      // Map common asset names to readable formats
+      const nameMap: { [key: string]: string } = {
+        'tMSFT': 'Microsoft Corp.',
+        'tAAPL': 'Apple Inc.',
+        'tGOOG': 'Alphabet Inc.',
+        'tD05': 'DBS Group Holdings',
+        'tBREN': 'Barito Renewables',
+        'tDELTA': 'Delta Electronics',
+        'tMAYBANK': 'Maybank',
+        'tXAU': 'Gold',
+        'tXAG': 'Silver',
+        'tBTC': 'Bitcoin',
+        'tETH': 'Ethereum'
+      };
+      
+      return nameMap[assetName] || assetName;
+    }
+    return assetName;
+  };
+
   // Use real asset data from hooks
   const {
     assetTokens,
@@ -329,7 +375,7 @@ export default function DashboardPage() {
           />
 
           {/* Quick Actions */}
-          <GlassCard className="p-6">
+          {/* <GlassCard className="p-6">
             <CardHeader className="px-0 pb-4">
               <CardTitle className="text-xl font-semibold text-white">
                 Quick Actions
@@ -395,7 +441,7 @@ export default function DashboardPage() {
                 })}
               </div>
             </CardContent>
-          </GlassCard>
+          </GlassCard> */}
 
           {/* Market Overview */}
           <GlassCard className="p-6">
@@ -623,20 +669,184 @@ export default function DashboardPage() {
               </GlassCard>
             </div>
 
-            {/* TradingView Widget */}
+            {/* Portfolio Allocation */}
             <div className="xl:col-span-1">
               <GlassCard className="p-6 h-fit">
                 <CardHeader className="px-0 pb-4">
                   <CardTitle className="text-xl font-semibold text-white flex items-center gap-2">
                     <BarChart3 className="h-5 w-5 text-[#F77A0E]" />
-                    Market Chart
+                    Portfolio Allocation
                   </CardTitle>
                 </CardHeader>
 
                 <CardContent className="px-0">
-                  <div className="h-80 rounded-lg overflow-hidden bg-gray-800/50 border border-gray-700/50">
-                    <TradingViewWidget />
-                  </div>
+                  {assetsLoading ? (
+                    // Loading skeleton for portfolio allocation
+                    <div className="space-y-4">
+                      {Array.from({ length: 4 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 bg-gray-700/50 rounded-full animate-pulse"></div>
+                            <div className="w-24 h-4 bg-gray-700/50 rounded animate-pulse"></div>
+                          </div>
+                          <div className="text-right">
+                            <div className="w-12 h-4 bg-gray-700/50 rounded animate-pulse mb-1"></div>
+                            <div className="w-20 h-3 bg-gray-600/50 rounded animate-pulse"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : tokenAllocation && tokenAllocation.length > 0 ? (
+                    <div className="space-y-6">
+                      {/* Pie Chart */}
+                      <div className="h-48 mb-6">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={tokenAllocation.map((allocation, index) => ({
+                                name: getSectorName(allocation.symbol),
+                                value: allocation.percentage,
+                                color: (() => {
+                                  // Assign different colors for each individual stock
+                                  const colorMap: { [key: string]: string } = {
+                                    'tMSFT': '#F77A0E', // Orange
+                                    'tAAPL': '#3B82F6', // Blue
+                                    'tGOOG': '#10B981', // Green
+                                    'tD05': '#8B5CF6', // Purple
+                                    'tBREN': '#EAB308', // Yellow
+                                    'tDELTA': '#EC4899', // Pink
+                                    'tMAYBANK': '#6366F1', // Indigo
+                                    'tXAU': '#F59E0B', // Amber
+                                    'tXAG': '#6B7280', // Gray
+                                    'tBTC': '#F97316', // Orange
+                                    'tETH': '#06B6D4', // Cyan
+                                  };
+                                  
+                                  return colorMap[allocation.symbol] || '#3B82F6'; // Default blue for unknown assets
+                                })()
+                              }))}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={40}
+                              outerRadius={80}
+                              paddingAngle={2}
+                              dataKey="value"
+                            >
+                              {tokenAllocation.map((allocation, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={(() => {
+                                    // Assign different colors for each individual stock
+                                    const colorMap: { [key: string]: string } = {
+                                      'tMSFT': '#F77A0E', // Orange
+                                      'tAAPL': '#3B82F6', // Blue
+                                      'tGOOG': '#10B981', // Green
+                                      'tD05': '#8B5CF6', // Purple
+                                      'tBREN': '#EAB308', // Yellow
+                                      'tDELTA': '#EC4899', // Pink
+                                      'tMAYBANK': '#6366F1', // Indigo
+                                      'tXAU': '#F59E0B', // Amber
+                                      'tXAG': '#6B7280', // Gray
+                                      'tBTC': '#F97316', // Orange
+                                      'tETH': '#06B6D4', // Cyan
+                                    };
+                                    
+                                    return colorMap[allocation.symbol] || '#3B82F6'; // Default blue for unknown assets
+                                  })()}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              contentStyle={{
+                                backgroundColor: '#1f2937',
+                                border: '1px solid #374151',
+                                borderRadius: '8px',
+                                color: '#ffffff'
+                              }}
+                              formatter={(value: any, name: any) => [`${value.toFixed(1)}%`, name]}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Allocation Details */}
+                      <div className="space-y-3">
+                        {tokenAllocation.map((allocation, index) => {
+
+                          return (
+                            <div
+                              key={allocation.name + index}
+                              className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 hover:bg-gray-700/30 transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-3 h-3 rounded-full ${getSectorColor(
+                                    allocation.symbol
+                                  )}`}
+                                ></div>
+                                <span className="text-gray-300 font-medium text-sm">
+                                  {getSectorName(allocation.name)}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-white text-sm">
+                                  {allocation.percentage.toFixed(1)}%
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  ${allocation.value.toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Total Portfolio Value */}
+                        <div className="pt-3 border-t border-gray-700/50">
+                          <div className="flex items-center justify-between font-semibold">
+                            <span className="text-gray-300">Total Portfolio</span>
+                            <span className="text-white">
+                              ${assetPortfolioValue?.toLocaleString() || "0"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : userHoldings && userHoldings.length > 0 ? (
+                    // Fallback to user holdings if tokenAllocation is empty
+                    <div className="space-y-4">
+                      {userHoldings.slice(0, 6).map((holding, index) => (
+                        <div
+                          key={holding.name + index}
+                          className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-[#F77A0E]"></div>
+                            <span className="text-gray-300 font-medium text-sm">
+                              {holding.name}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-400">
+                              ${holding.balance.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // Empty state
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 mb-2">
+                        No portfolio data available
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Start trading to see your allocation
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </GlassCard>
             </div>
@@ -754,150 +964,9 @@ export default function DashboardPage() {
 
           {/* Performance Metrics */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Portfolio Allocation */}
-            <GlassCard className="p-6">
-              <CardHeader className="px-0 pb-4">
-                <CardTitle className="text-xl font-semibold text-white flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-[#F77A0E]" />
-                  Portfolio Allocation
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="px-0">
-                {assetsLoading ? (
-                  // Loading skeleton for portfolio allocation
-                  <div className="space-y-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 bg-gray-700/50 rounded-full animate-pulse"></div>
-                          <div className="w-24 h-4 bg-gray-700/50 rounded animate-pulse"></div>
-                        </div>
-                        <div className="text-right">
-                          <div className="w-12 h-4 bg-gray-700/50 rounded animate-pulse mb-1"></div>
-                          <div className="w-20 h-3 bg-gray-600/50 rounded animate-pulse"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : tokenAllocation && tokenAllocation.length > 0 ? (
-                  <div className="space-y-4">
-                    {tokenAllocation.map((allocation, index) => {
-                      // Get sector color based on asset type
-                      const getSectorColor = (assetType: string) => {
-                        switch (assetType?.toUpperCase()) {
-                          case "STOCK":
-                          case "STOCK_SP500":
-                          case "STOCK_SGX":
-                          case "STOCK_IDX":
-                            return "bg-[#F77A0E]";
-                          case "COMMODITY":
-                          case "PRECIOUS_METALS":
-                            return "bg-yellow-500";
-                          case "CRYPTOCURRENCY":
-                            return "bg-purple-500";
-                          default:
-                            return "bg-blue-500";
-                        }
-                      };
-
-                      const getSectorName = (assetType: string) => {
-                        switch (assetType?.toUpperCase()) {
-                          case "STOCK":
-                          case "STOCK_SP500":
-                            return "US Stocks";
-                          case "STOCK_SGX":
-                            return "Singapore Stocks";
-                          case "STOCK_IDX":
-                            return "Indonesia Stocks";
-                          case "COMMODITY":
-                          case "PRECIOUS_METALS":
-                            return "Precious Metals";
-                          case "CRYPTOCURRENCY":
-                            return "Cryptocurrency";
-                          default:
-                            return allocation.name || assetType;
-                        }
-                      };
-
-                      return (
-                        <div
-                          key={allocation.name + index}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-3 h-3 rounded-full ${getSectorColor(
-                                allocation.type
-                              )}`}
-                            ></div>
-                            <span className="text-gray-300 font-medium">
-                              {getSectorName(allocation.type)}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold text-white">
-                              {allocation.percentage.toFixed(1)}%
-                            </div>
-                            <div className="text-sm text-gray-400">
-                              ${allocation.value.toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* Show total portfolio value */}
-                    <div className="pt-4 border-t border-gray-700/50">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-gray-300">Total Portfolio</span>
-                        <span className="text-white">
-                          ${assetPortfolioValue?.toLocaleString() || "0"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : userHoldings && userHoldings.length > 0 ? (
-                  // Fallback to user holdings if tokenAllocation is empty
-                  <div className="space-y-4">
-                    {userHoldings.slice(0, 6).map((holding, index) => (
-                      <div
-                        key={holding.name + index}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 rounded-full bg-[#F77A0E]"></div>
-                          <span className="text-gray-300 font-medium">
-                            {holding.name}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-400">
-                            ${holding.balance.toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  // Empty state
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">
-                      No portfolio data available
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Start trading to see your allocation
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </GlassCard>
 
             {/* Recent Transactions */}
-            <GlassCard className="p-6">
+            {/* <GlassCard className="p-6">
               <CardHeader className="px-0 pb-4">
                 <CardTitle className="text-xl font-semibold text-white flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-[#F77A0E]" />
@@ -961,7 +1030,7 @@ export default function DashboardPage() {
                   </Link>
                 </ActionButton>
               </CardContent>
-            </GlassCard>
+            </GlassCard> */}
           </div>
 
           {/* Footer Call-to-Action */}

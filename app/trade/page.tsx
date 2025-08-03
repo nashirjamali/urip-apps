@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { 
   TrendingUp, 
   ArrowRight, 
@@ -46,6 +47,8 @@ function TradePageContent() {
   const [filterType, setFilterType] = useState<"all" | "stock" | "crypto" | "commodity">("all")
   const [sortBy, setSortBy] = useState<"name" | "currentPrice" | "marketCap" | "supply" | "type" | "status">("name")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   
   const { address } = useAccount()
 
@@ -62,7 +65,14 @@ function TradePageContent() {
   const {
     transactions: recentTransactions,
     isLoading: transactionsLoading,
-    refresh: refreshTransactions
+    refresh: refreshTransactions,
+    formatTransactionValue,
+    getTransactionType,
+    formatTimestamp,
+    getAddressDisplayName,
+    getTransactionMethodName,
+    hasTokenTransfers,
+    getPrimaryTokenTransfer
   } = useTransactionHistory(5)
 
   // Handle sort change
@@ -117,6 +127,81 @@ function TradePageContent() {
     router.push(`/trade/${token.symbol}`)
   }
 
+  const handleTransactionClick = (transaction: any) => {
+    setSelectedTransaction(transaction)
+    setIsTransactionModalOpen(true)
+  }
+
+  // Helper function to safely format values for display
+  const safeFormatValue = (value: any): string => {
+    if (value === null || value === undefined) return 'N/A'
+    if (typeof value === 'string') return value
+    if (typeof value === 'number') return value.toString()
+    if (typeof value === 'object' && value !== null && value.raw !== undefined) {
+      try {
+        return value.raw.toString()
+      } catch {
+        return 'N/A'
+      }
+    }
+    if (typeof value === 'object' && value !== null) {
+      try {
+        return JSON.stringify(value)
+      } catch {
+        return 'N/A'
+      }
+    }
+    try {
+      return String(value)
+    } catch {
+      return 'N/A'
+    }
+  }
+
+  // Helper function to safely format gas price
+  const safeFormatGasPrice = (gasPrice: any): string => {
+    if (!gasPrice || gasPrice === null || gasPrice === undefined) return 'N/A'
+    const price = safeFormatValue(gasPrice)
+    if (price === 'N/A' || price === 'null' || price === 'undefined') return 'N/A'
+    try {
+      const priceNum = parseFloat(price)
+      if (isNaN(priceNum)) return 'N/A'
+      return (priceNum / 1e9).toFixed(2) + ' Gwei'
+    } catch {
+      return 'N/A'
+    }
+  }
+
+  // Helper function to safely format gas fee
+  const safeFormatGasFee = (gasUsed: any, gasPrice: any): string => {
+    if (!gasUsed || !gasPrice || gasUsed === null || gasPrice === null) return 'N/A'
+    try {
+      const usedStr = safeFormatValue(gasUsed)
+      const priceStr = safeFormatValue(gasPrice)
+      if (usedStr === 'N/A' || priceStr === 'N/A') return 'N/A'
+      
+      const used = parseFloat(usedStr)
+      const price = parseFloat(priceStr)
+      if (isNaN(used) || isNaN(price)) return 'N/A'
+      
+      const feeInWei = used * price
+      const feeInEth = feeInWei / Math.pow(10, 18)
+      return feeInEth.toFixed(6) + ' ETH'
+    } catch {
+      return 'N/A'
+    }
+  }
+
+  // Helper function to safely format timestamp
+  const safeFormatTimestamp = (timestamp: any) => {
+    if (!timestamp) return { date: 'N/A', time: 'N/A', relative: 'N/A' }
+    try {
+      return formatTimestamp(timestamp)
+    } catch {
+      return { date: 'N/A', time: 'N/A', relative: 'N/A' }
+    }
+  }
+
   const formatcurrentPrice = (currentPrice: string) => {
     return parseFloat(currentPrice).toFixed(2)
   }
@@ -167,6 +252,36 @@ function TradePageContent() {
               </div>
             </div>
 
+            {/* Navigation Menu */}
+            <div className="mb-6">
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  className="border-[#F77A0E]/50 text-[#F77A0E] hover:bg-[#F77A0E]/10 hover:border-[#F77A0E] bg-gray-900/80 backdrop-blur-sm"
+                  onClick={() => router.push('/trade')}
+                >
+                  <Coins className="h-4 w-4 mr-2" />
+                  Trade Assets
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-[#F77A0E]/50 text-[#F77A0E] hover:bg-[#F77A0E]/10 hover:border-[#F77A0E] bg-gray-900/80 backdrop-blur-sm"
+                  onClick={() => router.push('/trade/purchase-mutual-fund')}
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Purchase Mutual Fund
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-[#F77A0E]/50 text-[#F77A0E] hover:bg-[#F77A0E]/10 hover:border-[#F77A0E] bg-gray-900/80 backdrop-blur-sm"
+                  onClick={() => router.push('/portfolio')}
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  View Portfolio
+                </Button>
+              </div>
+            </div>
+
             {/* Stats Cards - Updated with orange theme */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm hover:border-[#F77A0E]/50 transition-all duration-300">
@@ -174,13 +289,13 @@ function TradePageContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">Total Assets</p>
-                      <p className="text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-white">
                         {assetsLoading ? (
                           <div className="h-8 w-16 bg-gray-800/50 rounded animate-pulse"></div>
                         ) : (
                           assetTokens?.length || 0
                         )}
-                      </p>
+                      </div>
                     </div>
                     <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
                       <Coins className="h-5 w-5 text-white" />
@@ -194,13 +309,13 @@ function TradePageContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">Portfolio Value</p>
-                      <p className="text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-white">
                         {assetsLoading ? (
                           <div className="h-8 w-20 bg-gray-800/50 rounded animate-pulse"></div>
                         ) : (
                           `$${totalPortfolioValue ? parseFloat(totalPortfolioValue.toString()).toFixed(2) : '0.00'}`
                         )}
-                      </p>
+                      </div>
                     </div>
                     <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
                       <DollarSign className="h-5 w-5 text-white" />
@@ -214,13 +329,13 @@ function TradePageContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">Active Trades</p>
-                      <p className="text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-white">
                         {transactionsLoading ? (
                           <div className="h-8 w-8 bg-gray-800/50 rounded animate-pulse"></div>
                         ) : (
                           recentTransactions?.length || 0
                         )}
-                      </p>
+                      </div>
                     </div>
                     <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
                       <TrendingUp className="h-5 w-5 text-white" />
@@ -234,7 +349,7 @@ function TradePageContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">Total Volume</p>
-                      <p className="text-2xl font-bold text-white">$1.2M</p>
+                      <div className="text-2xl font-bold text-white">$1.2M</div>
                     </div>
                     <div className="w-10 h-10 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-lg flex items-center justify-center">
                       <BarChart3 className="h-5 w-5 text-white" />
@@ -531,45 +646,305 @@ function TradePageContent() {
           )}
 
           {/* Recent Activity Section - Updated with orange theme */}
-          {recentTransactions && recentTransactions.length > 0 && (
-            <div className="mt-8">
-              <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm">
-                <CardHeader>
+          <div className="mt-8">
+            <Card className="bg-gray-900/80 border-[#F77A0E]/20 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center text-white">
                     <Clock className="h-5 w-5 mr-2 text-[#F77A0E]" />
                     Recent Activity
                   </CardTitle>
-                </CardHeader>
-                <CardContent>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={refreshTransactions}
+                    disabled={transactionsLoading}
+                    className="text-[#F77A0E] hover:bg-[#F77A0E]/10"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${transactionsLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {transactionsLoading ? (
                   <div className="space-y-3">
-                    {recentTransactions.slice(0, 5).map((tx, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 hover:bg-[#F77A0E]/10 transition-colors">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 animate-pulse">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            tx.type === 1 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {tx.type === 1 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                          </div>
+                          <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
                           <div>
-                            <p className="text-white font-medium">
-                              {tx.type === 1 ? 'Bought' : 'Sold'}
-                            </p>
-                            <p className="text-sm text-gray-400">{tx.timestamp}</p>
+                            <div className="w-20 h-4 bg-gray-700 rounded mb-1"></div>
+                            <div className="w-16 h-3 bg-gray-600 rounded"></div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-white font-medium">${tx.value}</p>
-                          <p className={`text-sm ${tx.type === 1 ? 'text-green-400' : 'text-red-400'}`}>
-                            {tx.type === 1 ? '+' : '-'}{tx.value}
-                          </p>
+                          <div className="w-16 h-4 bg-gray-700 rounded mb-1"></div>
+                          <div className="w-12 h-3 bg-gray-600 rounded"></div>
                         </div>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                ) : recentTransactions && recentTransactions.length > 0 ? (
+                  <div className="space-y-3">
+                    {recentTransactions.slice(0, 5).map((tx, index) => {
+                      const txType = getTransactionType(tx, address || '');
+                      const timestamp = formatTimestamp(tx.timestamp);
+                      const hasTokens = hasTokenTransfers(tx);
+                      const primaryToken = getPrimaryTokenTransfer(tx);
+                      
+                      return (
+                        <div 
+                          key={tx.hash} 
+                          className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 hover:bg-[#F77A0E]/10 transition-colors cursor-pointer"
+                          onClick={() => handleTransactionClick(tx)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              txType === 'send' ? 'bg-red-500/20 text-red-400' : 
+                              txType === 'receive' ? 'bg-green-500/20 text-green-400' : 
+                              'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {txType === 'send' ? <ArrowUp className="h-4 w-4" /> : 
+                               txType === 'receive' ? <ArrowDown className="h-4 w-4" /> : 
+                               <Coins className="h-4 w-4" />}
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">
+                                {hasTokens ? (
+                                  primaryToken ? (
+                                    `${txType === 'send' ? 'Sent' : txType === 'receive' ? 'Received' : 'Transferred'} ${primaryToken.token.symbol}`
+                                  ) : (
+                                    'Token Transfer'
+                                  )
+                                ) : (
+                                  `${txType === 'send' ? 'Sent' : txType === 'receive' ? 'Received' : 'Transaction'}`
+                                )}
+                              </p>
+                              <p className="text-sm text-gray-400">
+                                {getTransactionMethodName(tx)} • {timestamp.relative}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {hasTokens && primaryToken ? (
+                              <>
+                                <p className="text-white font-medium">
+                                  {formatTransactionValue(primaryToken.total.value, parseInt(primaryToken.token.decimals))} {primaryToken.token.symbol}
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                  {getAddressDisplayName(txType === 'send' ? tx.to : tx.from)}
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-white font-medium">
+                                  {formatTransactionValue(tx.value)} ETH
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                  {getAddressDisplayName(txType === 'send' ? tx.to : tx.from)}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-2">No recent transactions</div>
+                    <div className="text-sm text-gray-500">Start trading to see your activity here</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Transaction Details Modal */}
+          <Dialog open={isTransactionModalOpen} onOpenChange={setIsTransactionModalOpen}>
+            <DialogContent className="bg-gray-900/95 border-[#F77A0E]/20 backdrop-blur-sm max-w-2xl max-h-[90vh] overflow-hidden">
+              <DialogHeader className="flex-shrink-0">
+                <DialogTitle className="flex items-center justify-between text-white">
+                  <div className="flex items-center">
+                    <Info className="h-5 w-5 mr-2 text-[#F77A0E]" />
+                    Transaction Details
+                  </div>
+                  {selectedTransaction && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`https://sepolia-blockscout.lisk.com/tx/${selectedTransaction.hash}`, '_blank')}
+                      className="border-[#F77A0E]/50 text-[#F77A0E] hover:bg-[#F77A0E]/10 hover:border-[#F77A0E]"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View on Lisk
+                    </Button>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+                {selectedTransaction && (
+                  <div className="space-y-6">
+                    {/* Transaction Overview */}
+                  <div className="bg-gray-800/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          getTransactionType(selectedTransaction, address || '') === 'send' ? 'bg-red-500/20 text-red-400' : 
+                          getTransactionType(selectedTransaction, address || '') === 'receive' ? 'bg-green-500/20 text-green-400' : 
+                          'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {getTransactionType(selectedTransaction, address || '') === 'send' ? <ArrowUp className="h-5 w-5" /> : 
+                           getTransactionType(selectedTransaction, address || '') === 'receive' ? <ArrowDown className="h-5 w-5" /> : 
+                           <Coins className="h-5 w-5" />}
+                        </div>
+                        <div>
+                          <h3 className="text-white font-semibold">
+                            {hasTokenTransfers(selectedTransaction) ? (
+                              getPrimaryTokenTransfer(selectedTransaction) ? (
+                                `${getTransactionType(selectedTransaction, address || '') === 'send' ? 'Sent' : getTransactionType(selectedTransaction, address || '') === 'receive' ? 'Received' : 'Transferred'} ${getPrimaryTokenTransfer(selectedTransaction)?.token.symbol}`
+                              ) : (
+                                'Token Transfer'
+                              )
+                            ) : (
+                              `${getTransactionType(selectedTransaction, address || '') === 'send' ? 'Sent' : getTransactionType(selectedTransaction, address || '') === 'receive' ? 'Received' : 'Transaction'}`
+                            )}
+                          </h3>
+                          <p className="text-sm text-gray-400">
+                            {safeFormatTimestamp(selectedTransaction.timestamp).date} at {safeFormatTimestamp(selectedTransaction.timestamp).time}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="bg-[#F77A0E]/10 text-[#F77A0E] border-[#F77A0E]/20">
+                        {safeFormatValue(selectedTransaction.status)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Transaction Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Transaction Hash */}
+                    <div className="bg-gray-800/30 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Transaction Hash</h4>
+                      <p className="text-white font-mono text-sm break-all">
+                        {selectedTransaction.hash || 'N/A'}
+                      </p>
+                    </div>
+
+                    {/* Block Number */}
+                    <div className="bg-gray-800/30 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Block Number</h4>
+                      <p className="text-white">{safeFormatValue(selectedTransaction.block_number)}</p>
+                    </div>
+
+                    {/* From Address */}
+                    <div className="bg-gray-800/30 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">From</h4>
+                      <p className="text-white font-mono text-sm break-all">
+                        {selectedTransaction.from ? getAddressDisplayName(selectedTransaction.from) : 'N/A'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {selectedTransaction.from?.hash || 'N/A'}
+                      </p>
+                    </div>
+
+                    {/* To Address */}
+                    <div className="bg-gray-800/30 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">To</h4>
+                      <p className="text-white font-mono text-sm break-all">
+                        {selectedTransaction.to ? getAddressDisplayName(selectedTransaction.to) : 'N/A'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {selectedTransaction.to?.hash || 'N/A'}
+                      </p>
+                    </div>
+
+                    {/* Method */}
+                    <div className="bg-gray-800/30 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Method</h4>
+                      <p className="text-white">{getTransactionMethodName(selectedTransaction)}</p>
+                    </div>
+
+                    {/* Gas Used */}
+                    <div className="bg-gray-800/30 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Gas Used</h4>
+                      <p className="text-white">{safeFormatValue(selectedTransaction.gas_used)}</p>
+                    </div>
+                  </div>
+
+                  {/* Value and Token Details */}
+                  <div className="bg-gray-800/30 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-400 mb-3">Transaction Value</h4>
+                    {hasTokenTransfers(selectedTransaction) && getPrimaryTokenTransfer(selectedTransaction) ? (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Token:</span>
+                          <span className="text-white font-medium">{getPrimaryTokenTransfer(selectedTransaction)?.token.name} ({getPrimaryTokenTransfer(selectedTransaction)?.token.symbol})</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Amount:</span>
+                          <span className="text-white font-medium">
+                            {formatTransactionValue(getPrimaryTokenTransfer(selectedTransaction)!.total.value, parseInt(getPrimaryTokenTransfer(selectedTransaction)!.token.decimals))} {getPrimaryTokenTransfer(selectedTransaction)?.token.symbol}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Token Contract:</span>
+                          <span className="text-white font-mono text-sm break-all">{getPrimaryTokenTransfer(selectedTransaction)?.token.address}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Amount:</span>
+                        <span className="text-white font-medium">{formatTransactionValue(selectedTransaction.value)} ETH</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gas Details */}
+                  <div className="bg-gray-800/30 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-400 mb-3">Gas Details</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Gas Price:</span>
+                        <span className="text-white">{safeFormatGasPrice(selectedTransaction.gas_price)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Gas Limit:</span>
+                        <span className="text-white">{safeFormatValue(selectedTransaction.gas_limit)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Total Fee:</span>
+                        <span className="text-white">{safeFormatGasFee(selectedTransaction.gas_used, selectedTransaction.gas_price)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Details */}
+                  <div className="bg-gray-800/30 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-400 mb-3">Additional Details</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Nonce:</span>
+                        <span className="text-white">{safeFormatValue(selectedTransaction.nonce)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Confirmations:</span>
+                        <span className="text-white">{safeFormatValue(selectedTransaction.confirmations)}</span>
+                      </div>
+                      {selectedTransaction.revert_reason && (
+                        <div className="flex justify-between items-start">
+                          <span className="text-gray-400">Revert Reason:</span>
+                          <span className="text-red-400 text-sm max-w-xs break-words">{safeFormatValue(selectedTransaction.revert_reason)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
