@@ -3,24 +3,54 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useDisconnect } from 'wagmi'
+import { useDisconnect, useAccount } from 'wagmi'
 import { useWalletStore } from '@/stores/useWalletStore'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { 
   BarChart3, 
   AreaChart, 
   LineChart, 
   Vote, 
   RefreshCw, 
-  ChevronDown 
+  ChevronDown,
+  LogOut
 } from 'lucide-react'
+import { usePurchaseManager } from '@/hooks/usePurchaseManager'
 
 const Navigation = () => {
   const pathname = usePathname()
   const router = useRouter()
   const { disconnect } = useDisconnect()
   const { setAddress, setBalance } = useWalletStore()
+  const { address } = useAccount()
+  const [dropdownOpen, setDropdownOpen] = React.useState(false)
+  
+  // Real data from smart contracts
+  const { usdtBalance } = usePurchaseManager()
+  
+  // Get user initials from address
+  const getUserInitials = () => {
+    if (!address) return 'JD'
+    return address.slice(2, 4).toUpperCase()
+  }
+  
+  // Get user name (you can extend this with ENS or other naming services)
+  const getUserName = () => {
+    if (!address) return 'James Dias'
+    return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
   
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -32,11 +62,11 @@ const Navigation = () => {
   const isActive = (href: string) => pathname === href
 
   const handleLogout = () => {
-    // Disconnect wallet
-    disconnect()
+    // Close dropdown first
+    setDropdownOpen(false)
     
-    // Redirect to home page
-    router.push('/')
+    // Disconnect wallet only
+    disconnect()
   }
 
   return (
@@ -82,14 +112,16 @@ const Navigation = () => {
             <RefreshCw className="h-4 w-4" />
           </Button>
           
-          <DropdownMenu>
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger className="flex items-center space-x-2 focus:outline-none">
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                JD
+                {getUserInitials()}
               </div>
               <div className="hidden md:block text-left">
-                <div className="font-medium text-white">James Dias</div>
-                <div className="text-xs text-gray-300">100 Voting Power</div>
+                <div className="font-medium text-white">{getUserName()}</div>
+                <div className="text-xs text-gray-300">
+                  ${usdtBalance} USDT
+                </div>
               </div>
               <ChevronDown className="ml-1 h-4 w-4 text-gray-400" />
             </DropdownMenuTrigger>
@@ -97,9 +129,55 @@ const Navigation = () => {
               align="end"
               className="w-48 bg-gray-900/95 backdrop-blur-lg border-gray-800 text-gray-200"
             >
+              {/* User Info Section */}
+              <div className="px-3 py-2 border-b border-gray-800">
+                <div className="text-sm font-medium text-white">{getUserName()}</div>
+                <div className="text-xs text-gray-400">{address}</div>
+              </div>
+              
+              {/* USDT Balance Section */}
+              <div className="px-3 py-2 border-b border-gray-800">
+                <div className="text-xs text-gray-400 mb-1">USDT Balance</div>
+                <div className="text-sm font-medium text-white">
+                  ${usdtBalance} USDT
+                </div>
+              </div>
+              
+              {/* Actions */}
               <DropdownMenuItem className="hover:bg-gray-800">Profile</DropdownMenuItem>
               <DropdownMenuItem className="hover:bg-gray-800">Settings</DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-gray-800" onClick={handleLogout}>Logout</DropdownMenuItem>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem 
+                    className="hover:bg-gray-800 cursor-pointer"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Disconnect
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-white">Confirm Disconnect
+
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-gray-300">
+                      Are you sure you want to disconnect your wallet? This will disconnect your wallet from the application.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleLogout}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Disconnect
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

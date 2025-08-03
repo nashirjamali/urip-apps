@@ -1,703 +1,902 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardTitle, CardHeader, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
-  Check,
-  X,
+  Vote, 
+  Users, 
+  FileText, 
   Clock,
-  Users,
-  TrendingUp,
-  Award,
-  Star,
-  ExternalLink,
-  Copy,
   CheckCircle,
+  XCircle, 
   AlertCircle,
-  Vote,
-  BarChart3,
-  Calendar,
-  UserCheck,
-  Shield,
-  Target,
-  Zap,
-  Menu,
-  Search,
-  Bell,
-  Settings,
-  LogOut,
-  User,
-  Wallet,
-  Home,
+  Plus,
+  TrendingUp,
   TrendingDown,
-  PieChart,
-  AreaChart,
-  LineChart,
+  Minus,
+  UserCheck,
+  Settings,
   RefreshCw,
-  ChevronDown,
-  Activity
-} from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
-import Link from 'next/link'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+  Zap,
+  ThumbsUp,
+  ThumbsDown,
+  HelpCircle
+} from "lucide-react"
 import Navigation from '@/components/Navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import { useAccount } from "wagmi";
-import { useRouter } from "next/navigation";
+import { useAccount } from "wagmi"
+import { useDAOGovernance, ProposalCategory, ProposalStatus, VoteType } from '@/hooks/useDAOGovernance'
+import { formatUnits } from 'viem'
 
-// Fund Manager Data
-const fundManagers = [
-  {
-    id: 1,
-    name: "Quantum Capital",
-    ens: "quantum.eth",
-    avatar: "/placeholder-user.jpg",
-    description: "Leading algorithmic trading firm with 8+ years experience in crypto markets. Specializes in high-frequency trading and arbitrage strategies.",
-    performance: {
-      totalReturn: 156.7,
-      sharpeRatio: 2.8,
-      maxDrawdown: -12.3,
-      winRate: 78.5,
-      totalTrades: 1247,
-      avgTradeSize: 25000
-    },
-    strategies: ["Arbitrage", "Momentum", "Mean Reversion"],
-    riskLevel: "Medium",
-    minInvestment: 10000,
-    maxInvestment: 1000000,
-    feeStructure: {
-      management: 1.5,
-      performance: 20
-    },
-    trackRecord: "5 years",
-    teamSize: 12,
-    compliance: "SEC Registered",
-    socialProof: {
-      followers: 15420,
-      reviews: 4.8,
-      totalInvestors: 847
-    },
-    assetAllocation: [
-      { symbol: "XAU", name: "Gold", percentage: 20 },
-      { symbol: "SPY", name: "S&P 500", percentage: 30 },
-      { symbol: "BBRI", name: "Bank BRI", percentage: 25 },
-      { symbol: "BTC", name: "Bitcoin", percentage: 15 },
-      { symbol: "ETH", name: "Ethereum", percentage: 10 }
-    ]
-  },
-  {
-    id: 2,
-    name: "Alpha Strategies",
-    ens: "alpha.eth",
-    avatar: "/placeholder-user.jpg",
-    description: "Institutional-grade crypto fund focusing on systematic trading strategies. Proven track record in bear and bull markets.",
-    performance: {
-      totalReturn: 203.4,
-      sharpeRatio: 3.2,
-      maxDrawdown: -8.7,
-      winRate: 82.1,
-      totalTrades: 2156,
-      avgTradeSize: 45000
-    },
-    strategies: ["Systematic", "Trend Following", "Volatility"],
-    riskLevel: "High",
-    minInvestment: 25000,
-    maxInvestment: 5000000,
-    feeStructure: {
-      management: 2.0,
-      performance: 25
-    },
-    trackRecord: "7 years",
-    teamSize: 18,
-    compliance: "SEC Registered",
-    socialProof: {
-      followers: 23450,
-      reviews: 4.9,
-      totalInvestors: 1234
-    },
-    assetAllocation: [
-      { symbol: "TSLA", name: "Tesla", percentage: 35 },
-      { symbol: "NVDA", name: "NVIDIA", percentage: 25 },
-      { symbol: "BTC", name: "Bitcoin", percentage: 20 },
-      { symbol: "QQQ", name: "NASDAQ", percentage: 15 },
-      { symbol: "MSFT", name: "Microsoft", percentage: 5 }
-    ]
-  },
-  {
-    id: 3,
-    name: "Crypto Dynamics",
-    ens: "cryptodynamics.eth",
-    avatar: "/placeholder-user.jpg",
-    description: "AI-powered trading algorithms with machine learning optimization. Focuses on market microstructure and liquidity analysis.",
-    performance: {
-      totalReturn: 89.3,
-      sharpeRatio: 2.1,
-      maxDrawdown: -15.8,
-      winRate: 71.2,
-      totalTrades: 892,
-      avgTradeSize: 18000
-    },
-    strategies: ["AI/ML", "Liquidity", "Market Making"],
-    riskLevel: "Low",
-    minInvestment: 5000,
-    maxInvestment: 500000,
-    feeStructure: {
-      management: 1.0,
-      performance: 15
-    },
-    trackRecord: "3 years",
-    teamSize: 8,
-    compliance: "Pending",
-    socialProof: {
-      followers: 8760,
-      reviews: 4.6,
-      totalInvestors: 456
-    },
-    assetAllocation: [
-      { symbol: "USDC", name: "USD Coin", percentage: 40 },
-      { symbol: "ETH", name: "Ethereum", percentage: 25 },
-      { symbol: "AAPL", name: "Apple", percentage: 20 },
-      { symbol: "GOOGL", name: "Google", percentage: 10 },
-      { symbol: "BTC", name: "Bitcoin", percentage: 5 }
-    ]
-  },
-  {
-    id: 4,
-    name: "Blockchain Ventures",
-    ens: "blockchainventures.eth",
-    avatar: "/placeholder-user.jpg",
-    description: "DeFi-native fund manager with deep expertise in yield farming, liquidity provision, and cross-chain arbitrage.",
-    performance: {
-      totalReturn: 312.8,
-      sharpeRatio: 1.9,
-      maxDrawdown: -22.4,
-      winRate: 65.8,
-      totalTrades: 3456,
-      avgTradeSize: 12000
-    },
-    strategies: ["DeFi", "Yield Farming", "Cross-chain"],
-    riskLevel: "High",
-    minInvestment: 15000,
-    maxInvestment: 2000000,
-    feeStructure: {
-      management: 1.8,
-      performance: 22
-    },
-    trackRecord: "4 years",
-    teamSize: 15,
-    compliance: "SEC Registered",
-    socialProof: {
-      followers: 18920,
-      reviews: 4.7,
-      totalInvestors: 678
-    },
-    assetAllocation: [
-      { symbol: "UNI", name: "Uniswap", percentage: 30 },
-      { symbol: "AAVE", name: "Aave", percentage: 25 },
-      { symbol: "COMP", name: "Compound", percentage: 20 },
-      { symbol: "SUSHI", name: "SushiSwap", percentage: 15 },
-      { symbol: "CRV", name: "Curve", percentage: 10 }
-    ]
-  }
-]
-
-// Voting Data
-const votingData = {
-  proposal: {
-    id: "DAO-2024-001",
-    title: "Auto Trading Fund Manager Selection",
-    description: "Select the preferred fund manager for our automated trading system. This vote will determine which professional trading team will manage our community's pooled funds for the next 12 months.",
-    creator: "dao.eth",
-    status: "Active",
-    startDate: "2024-01-15",
-    endDate: "2024-01-22",
-    quorum: 1000, // Minimum votes required
-    totalSupply: 10000, // Total DAO tokens
-    currentVotes: 3247,
-    requiredQuorum: 50 // 50% of total supply
-  },
-  votes: [
-    { voter: "0x1234...5678", vote: "Quantum Capital", power: 150, percentage: 1.5 },
-    { voter: "alice.eth", vote: "Alpha Strategies", power: 200, percentage: 2.0 },
-    { voter: "bob.eth", vote: "Crypto Dynamics", power: 75, percentage: 0.75 },
-    { voter: "0xabcd...efgh", vote: "Blockchain Ventures", power: 300, percentage: 3.0 },
-    { voter: "crypto.eth", vote: "Quantum Capital", power: 125, percentage: 1.25 },
-    { voter: "0x9876...5432", vote: "Alpha Strategies", power: 180, percentage: 1.8 },
-    { voter: "investor.eth", vote: "Quantum Capital", power: 220, percentage: 2.2 },
-    { voter: "0xdef0...1234", vote: "Crypto Dynamics", power: 90, percentage: 0.9 },
-    { voter: "trader.eth", vote: "Blockchain Ventures", power: 160, percentage: 1.6 },
-    { voter: "0x5678...9abc", vote: "Alpha Strategies", power: 140, percentage: 1.4 }
-  ]
+export default function DAOPage() {
+  return (
+    <ProtectedRoute>
+      <DAOContent />
+    </ProtectedRoute>
+  )
 }
 
-// Calculate vote totals
-const voteTotals = fundManagers.map(manager => {
-  const votes = votingData.votes.filter(v => v.vote === manager.name);
-  const totalPower = votes.reduce((sum, v) => sum + v.power, 0);
-  const percentage = (totalPower / votingData.proposal.totalSupply) * 100;
-  return {
-    manager: manager.name,
-    votes: votes.length,
-    power: totalPower,
-    percentage: percentage
-  };
-});
+function DAOContent() {
+  const { address } = useAccount()
+  const [activeTab, setActiveTab] = useState("overview")
+  const [showCreateProposal, setShowCreateProposal] = useState(false)
+  const [selectedProposal, setSelectedProposal] = useState<number | null>(null)
+  const [delegateAddress, setDelegateAddress] = useState("")
+  const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-function DAOPageContent() {
-  const [selectedManager, setSelectedManager] = useState<string | null>(null);
-  const [userVotingPower, setUserVotingPower] = useState(100);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [timeRemaining, setTimeRemaining] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0
-  });
-  const { address } = useAccount();
-  const router = useRouter();
-  // Calculate time remaining
-  useEffect(() => {
-    const endDate = new Date(votingData.proposal.endDate).getTime();
+  const {
+    proposals,
+    proposalCount,
+    votingPower,
+    loading,
+    isWritePending,
+    isConfirming,
+    isConfirmed,
+    error,
+    writeError,
+    receiptError,
+    createProposal,
+    castVote,
+    delegate,
+    hasVoted,
+    getVote,
+    getProposalState,
+    getProposalConfig,
+    loadProposals,
+    getCategoryName,
+    getStatusName,
+    getVoteTypeName,
+    ProposalCategory,
+    ProposalStatus,
+    VoteType,
+  } = useDAOGovernance()
 
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = endDate - now;
+  // Proposal creation form
+  const [proposalForm, setProposalForm] = useState({
+    title: "",
+    description: "",
+    category: ProposalCategory.FUND_MANAGEMENT,
+    actionDescriptions: [""],
+    targets: [""],
+    values: [BigInt(0)],
+    calldatas: [""]
+  })
 
-      if (distance > 0) {
-        setTimeRemaining({
-          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((distance % (1000 * 60)) / 1000)
-        });
-      } else {
-        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      }
-    }, 1000);
+  // Vote form
+  const [voteForm, setVoteForm] = useState({
+    support: VoteType.FOR,
+    reason: ""
+  })
 
-    return () => clearInterval(timer);
-  }, []);
+  // Individual vote forms for each proposal
+  const [proposalVotes, setProposalVotes] = useState<{
+    [proposalId: number]: { support: VoteType; reason: string }
+  }>({})
 
-  const handleVote = () => {
-    if (selectedManager) {
-      // Here you would typically submit the vote to the blockchain
-      console.log(`Voting for ${selectedManager} with ${userVotingPower} power`);
-      alert(`Vote submitted for ${selectedManager}!`);
+  // User's voting history
+  const [userVotes, setUserVotes] = useState<{
+    [proposalId: number]: { support: VoteType; reason: string; timestamp: number }
+  }>({})
+
+  // Handle proposal creation
+  const handleCreateProposal = async () => {
+    if (!proposalForm.title || !proposalForm.description) {
+      setAlertMessage({ type: 'error', message: 'Please fill in all required fields' })
+      return
     }
-  };
 
-  const totalVotes = voteTotals.reduce((sum, v) => sum + v.power, 0);
-  const quorumPercentage = (totalVotes / votingData.proposal.totalSupply) * 100;
-  const hasQuorum = quorumPercentage >= votingData.proposal.requiredQuorum;
+    setAlertMessage(null)
+    try {
+      await createProposal(
+        proposalForm.title,
+        proposalForm.description,
+        proposalForm.actionDescriptions,
+        proposalForm.targets,
+        proposalForm.values,
+        proposalForm.calldatas,
+        proposalForm.category
+      )
+      setAlertMessage({ type: 'success', message: 'Proposal created successfully!' })
+      setShowCreateProposal(false)
+      setProposalForm({
+        title: "",
+        description: "",
+        category: ProposalCategory.FUND_MANAGEMENT,
+        actionDescriptions: [""],
+        targets: [""],
+        values: [BigInt(0)],
+        calldatas: [""]
+      })
+    } catch (error: any) {
+      setAlertMessage({ type: 'error', message: error.message || 'Failed to create proposal' })
+    }
+  }
+
+  // Handle voting
+  const handleVote = async (proposalId: number) => {
+    const voteData = proposalVotes[proposalId]
+    if (!voteData || !voteData.reason.trim()) {
+      setAlertMessage({ type: 'error', message: 'Please provide a reason for your vote' })
+      return
+    }
+
+    setAlertMessage(null)
+    try {
+      await castVote(proposalId, voteData.support, voteData.reason)
+      setAlertMessage({ type: 'success', message: `Vote cast successfully for proposal #${proposalId}!` })
+      
+      // Clear the vote form for this proposal
+      setProposalVotes(prev => {
+        const updated = { ...prev }
+        delete updated[proposalId]
+        return updated
+      })
+
+      // Add to user's voting history
+      setUserVotes(prev => ({
+        ...prev,
+        [proposalId]: {
+          support: voteData.support,
+          reason: voteData.reason,
+          timestamp: Date.now()
+        }
+      }))
+    } catch (error: any) {
+      setAlertMessage({ type: 'error', message: error.message || 'Failed to cast vote' })
+    }
+  }
+
+  // Update vote form for a specific proposal
+  const updateProposalVote = (proposalId: number, field: 'support' | 'reason', value: VoteType | string) => {
+    setProposalVotes(prev => ({
+      ...prev,
+      [proposalId]: {
+        ...prev[proposalId],
+        [field]: value
+      }
+    }))
+  }
+
+  // Quick vote function
+  const handleQuickVote = async (proposalId: number, support: VoteType, reason: string) => {
+    setAlertMessage(null)
+    try {
+      await castVote(proposalId, support, reason)
+      setAlertMessage({ 
+        type: 'success', 
+        message: `Quick vote cast successfully for proposal #${proposalId}!` 
+      })
+
+      // Add to user's voting history
+      setUserVotes(prev => ({
+        ...prev,
+        [proposalId]: {
+          support,
+          reason,
+          timestamp: Date.now()
+        }
+      }))
+    } catch (error: any) {
+      setAlertMessage({ type: 'error', message: error.message || 'Failed to cast quick vote' })
+    }
+  }
+
+  // Handle delegation
+  const handleDelegate = async () => {
+    if (!delegateAddress) {
+      setAlertMessage({ type: 'error', message: 'Please enter a delegate address' })
+      return
+    }
+
+    setAlertMessage(null)
+    try {
+      await delegate(delegateAddress)
+      setAlertMessage({ type: 'success', message: 'Voting power delegated successfully!' })
+      setDelegateAddress("")
+    } catch (error: any) {
+      setAlertMessage({ type: 'error', message: error.message || 'Failed to delegate voting power' })
+    }
+  }
+
+  // Handle transaction completion
+  useEffect(() => {
+    if (isConfirmed) {
+      loadProposals()
+    }
+  }, [isConfirmed, loadProposals])
+
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp * 1000).toLocaleString()
+  }
+
+  const getStatusColor = (status: number) => {
+    switch (status) {
+      case ProposalStatus.ACTIVE:
+        return "bg-blue-500/20 text-blue-400 border-blue-500/20"
+      case ProposalStatus.SUCCEEDED:
+        return "bg-green-500/20 text-green-400 border-green-500/20"
+      case ProposalStatus.DEFEATED:
+        return "bg-red-500/20 text-red-400 border-red-500/20"
+      case ProposalStatus.EXECUTED:
+        return "bg-purple-500/20 text-purple-400 border-purple-500/20"
+      default:
+        return "bg-gray-500/20 text-gray-400 border-gray-500/20"
+    }
+  }
+
+  const getCategoryColor = (category: number) => {
+    switch (category) {
+      case ProposalCategory.FUND_MANAGEMENT:
+        return "bg-green-500/20 text-green-400 border-green-500/20"
+      case ProposalCategory.PROTOCOL_GOVERNANCE:
+        return "bg-blue-500/20 text-blue-400 border-blue-500/20"
+      case ProposalCategory.TREASURY_MANAGEMENT:
+        return "bg-purple-500/20 text-purple-400 border-purple-500/20"
+      case ProposalCategory.EMERGENCY_ACTION:
+        return "bg-red-500/20 text-red-400 border-red-500/20"
+      default:
+        return "bg-gray-500/20 text-gray-400 border-gray-500/20"
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-bg-primary to-dark-bg-secondary text-dark-text-primary">
-      {/* Navigation */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <Navigation />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Content Area */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Proposal Header */}
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-6">
-                <Badge className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border-emerald-400/50 px-3 py-1">
-                  {votingData.proposal.status}
-                </Badge>
-                <span className="text-sm text-gray-300">#{votingData.proposal.id}</span>
-                <span className="text-sm text-gray-300">•</span>
-                <span className="text-sm text-gray-300">by {votingData.proposal.creator}</span>
+          <h1 className="text-4xl font-bold text-white mb-2">DAO Governance</h1>
+          <p className="text-gray-400">Decentralized governance for the URIP protocol</p>
               </div>
-              <h1 className="text-3xl font-bold mb-4 text-white">{votingData.proposal.title}</h1>
-              <p className="text-gray-200 text-lg leading-relaxed">{votingData.proposal.description}</p>
+
+        {/* Alert Messages */}
+        {alertMessage && (
+          <Alert className={`border-2 mb-6 ${
+            alertMessage.type === 'success' 
+              ? 'border-green-500/20 bg-green-500/10' 
+              : 'border-red-500/20 bg-red-500/10'
+          }`}>
+            <div className="flex items-center gap-2">
+              {alertMessage.type === 'success' ? (
+                <CheckCircle className="h-4 w-4 text-green-400" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-red-400" />
+              )}
+              <AlertDescription className={`${
+                alertMessage.type === 'success' ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {alertMessage.message}
+              </AlertDescription>
+            </div>
+          </Alert>
+        )}
+
+        {/* Transaction Status */}
+        {(isWritePending || isConfirming) && (
+          <Alert className="border-2 border-blue-500/20 bg-blue-500/10 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <AlertDescription className="text-blue-400">
+                {isWritePending ? 'Processing transaction...' : 'Confirming transaction...'}
+              </AlertDescription>
+                  </div>
+          </Alert>
+        )}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800/50">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600">
+              <Vote className="h-4 w-4 mr-2" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="proposals" className="data-[state=active]:bg-blue-600">
+              <FileText className="h-4 w-4 mr-2" />
+              Proposals
+            </TabsTrigger>
+            <TabsTrigger value="delegate" className="data-[state=active]:bg-blue-600">
+              <UserCheck className="h-4 w-4 mr-2" />
+              Delegate
+            </TabsTrigger>
+            <TabsTrigger value="create" className="data-[state=active]:bg-blue-600">
+              <Plus className="h-4 w-4 mr-2" />
+              Create
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Voting Power */}
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Vote className="h-5 w-5" />
+                    Your Voting Power
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {votingPower} URIP
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Total voting power including delegations
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Total Proposals */}
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Total Proposals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {proposalCount}
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Proposals created to date
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Active Proposals */}
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Active Proposals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {proposals.filter(p => p.status === ProposalStatus.ACTIVE).length}
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Currently open for voting
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-dark-accent-blue/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <Shield className="h-6 w-6 text-dark-accent-blue" />
-                  </div>
-                  <div className="text-2xl font-bold text-dark-text-primary mb-1">{quorumPercentage.toFixed(1)}%</div>
-                  <div className="text-sm text-dark-text-secondary font-medium">Quorum Progress</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-dark-accent-blue/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-6 w-6 text-dark-accent-blue" />
-                  </div>
-                  <div className="text-2xl font-bold text-dark-text-primary mb-1">{votingData.votes.length}</div>
-                  <div className="text-sm text-dark-text-secondary font-medium">Total Voters</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-dark-accent-blue/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <Target className="h-6 w-6 text-dark-accent-blue" />
-                  </div>
-                  <div className="text-2xl font-bold text-dark-text-primary mb-1">{fundManagers.length}</div>
-                  <div className="text-sm text-dark-text-secondary font-medium">Candidates</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-dark-accent-blue/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <Clock className="h-6 w-6 text-dark-accent-blue" />
-                  </div>
-                  <div className="text-2xl font-bold text-dark-text-primary mb-1">{timeRemaining.days}d</div>
-                  <div className="text-sm text-dark-text-secondary font-medium">Time Left</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Current Vote Results */}
-            <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-xl overflow-hidden mb-8">
-              <CardHeader className="bg-dark-bg-secondary/50 border-b border-dark-border pb-4">
-                <CardTitle className="text-xl font-bold flex items-center gap-3 text-dark-text-primary">
-                  <div className="w-8 h-8 bg-dark-accent-blue/20 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="h-4 w-4 text-dark-accent-blue" />
-                  </div>
-                  Current Votes
-                </CardTitle>
+            {/* Recent Proposals */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Recent Proposals</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : proposals.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">No proposals found</p>
+                ) : (
                 <div className="space-y-4">
-                  {voteTotals.map((vote, index) => (
-                    <div key={index} className="group hover:bg-gray-700/50 p-4 rounded-lg transition-all duration-300 border border-gray-700/50">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded-full ${index === 0 ? "bg-emerald-400" :
-                              index === 1 ? "bg-blue-400" :
-                                index === 2 ? "bg-purple-400" :
-                                  "bg-amber-400"
-                            }`}></div>
-                          <span className="font-semibold text-white text-lg">{vote.manager}</span>
-                          {index === 0 && (
-                            <Badge className="bg-emerald-500/30 text-emerald-200 border-emerald-400 text-xs px-2 py-1">
-                              Leading
+                    {proposals.slice(0, 5).map((proposal) => (
+                      <div key={proposal.id} className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg">
+                        <div className="flex-1">
+                          <h3 className="text-white font-medium">{proposal.title}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge className={getCategoryColor(proposal.category)}>
+                              {getCategoryName(proposal.category)}
                             </Badge>
-                          )}
+                            <Badge className={getStatusColor(proposal.status)}>
+                              {getStatusName(proposal.status)}
+                            </Badge>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold text-white">{vote.percentage.toFixed(1)}%</div>
-                          <div className="text-sm text-gray-200">{vote.votes} voters</div>
                         </div>
-                      </div>
-                      <Progress value={vote.percentage} className="h-3 bg-gray-600" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedProposal(proposal.id)
+                            setActiveTab("proposals")
+                          }}
+                        >
+                          View Details
+                        </Button>
                     </div>
                   ))}
                 </div>
+                )}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Fund Manager Candidates */}
-            <div className="space-y-6">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2 text-white">Fund Manager Candidates</h2>
-                <p className="text-gray-300">
-                  Choose from our carefully vetted professional fund managers to lead our automated trading strategies
-                </p>
+          {/* Proposals Tab */}
+          <TabsContent value="proposals" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">All Proposals</h2>
+              <Button
+                variant="outline"
+                onClick={() => loadProposals()}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
-
-              <div className="space-y-6">
-                {fundManagers.map((manager, index) => {
-                  const voteData = voteTotals.find(v => v.manager === manager.name);
-                  const votePercentage = voteData ? voteData.percentage : 0;
-                  const isLeading = index === 0;
-
-                  return (
-                    <Card
-                      key={manager.id}
-                      className={`group cursor-pointer transition-all duration-300 hover:shadow-xl ${selectedManager === manager.name
-                          ? 'ring-2 ring-blue-400 bg-blue-500/20 shadow-xl border-blue-400'
-                          : 'bg-gray-800 border border-gray-600 hover:bg-gray-750 hover:border-gray-500'
-                        }`}
-                      onClick={() => setSelectedManager(manager.name)}
-                    >
+            ) : proposals.length === 0 ? (
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardContent className="text-center py-12">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-white text-lg font-medium mb-2">No Proposals</h3>
+                  <p className="text-gray-400 mb-4">Be the first to create a proposal!</p>
+                  <Button onClick={() => setActiveTab("create")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Proposal
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {proposals.map((proposal) => (
+                  <Card key={proposal.id} className="bg-gray-800/50 border-gray-700">
                       <CardContent className="p-6">
-                        {/* Manager Header */}
-                        <div className="flex flex-col lg:flex-row lg:items-start gap-4 mb-6">
-                          <div className="flex items-start gap-4">
-                            <Avatar className="w-16 h-16 border-4 border-gray-600 shadow-lg group-hover:border-blue-500 transition-colors duration-300">
-                              <AvatarImage src={manager.avatar} />
-                              <AvatarFallback className="text-xl bg-gray-700 font-bold text-white">{manager.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-
+                      <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-xl font-bold text-white">{manager.name}</h3>
-                                {isLeading && (
-                                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/50">
-                                    <Award className="h-3 w-3 mr-1" />
-                                    Leading
+                          <h3 className="text-white text-lg font-medium mb-2">
+                            #{proposal.id} - {proposal.title}
+                          </h3>
+                          <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                            {proposal.description}
+                          </p>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge className={getCategoryColor(proposal.category)}>
+                              {getCategoryName(proposal.category)}
                                   </Badge>
-                                )}
-                                <Badge className={`${manager.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' :
-                                    manager.riskLevel === 'Medium' ? 'bg-amber-500/20 text-amber-300 border-amber-400/50' :
-                                      'bg-rose-500/20 text-rose-300 border-rose-400/50'
-                                  }`}>
-                                  {manager.riskLevel} Risk
+                            <Badge className={getStatusColor(proposal.status)}>
+                              {getStatusName(proposal.status)}
                                 </Badge>
-                                <Badge variant="outline" className="border-gray-500 text-gray-300">
-                                  {manager.compliance}
-                                </Badge>
-                              </div>
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            <p>Proposed by: {proposal.proposer.slice(0, 6)}...{proposal.proposer.slice(-4)}</p>
+                            <p>Start: {formatTime(proposal.startTime)}</p>
+                            <p>End: {formatTime(proposal.endTime)}</p>
+                          </div>
+                        </div>
+                            </div>
 
-                              <div className="flex items-center gap-2 mb-3">
-                                <div className="flex items-center gap-1 text-amber-400">
-                                  <Star className="h-4 w-4 fill-current" />
-                                  <span className="font-medium">{manager.socialProof.reviews}</span>
-                                </div>
-                                <span className="text-gray-400">•</span>
-                                <span className="text-gray-300">{manager.socialProof.totalInvestors} investors</span>
-                                <span className="text-gray-400">•</span>
-                                <span className="text-gray-300">{manager.trackRecord} experience</span>
-                              </div>
+                      {/* Vote Results */}
+                      <div className="space-y-4 mb-4">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center p-3 bg-green-500/10 rounded-lg">
+                            <div className="text-green-400 font-medium">
+                              {formatUnits(proposal.forVotes, 18)}
+                            </div>
+                            <div className="text-sm text-gray-400">For</div>
+                          </div>
+                          <div className="text-center p-3 bg-red-500/10 rounded-lg">
+                            <div className="text-red-400 font-medium">
+                              {formatUnits(proposal.againstVotes, 18)}
+                            </div>
+                            <div className="text-sm text-gray-400">Against</div>
+                          </div>
+                          <div className="text-center p-3 bg-gray-500/10 rounded-lg">
+                            <div className="text-gray-400 font-medium">
+                              {formatUnits(proposal.abstainVotes, 18)}
+                            </div>
+                            <div className="text-sm text-gray-400">Abstain</div>
+                          </div>
+                        </div>
 
-                              <p className="text-gray-200 leading-relaxed text-sm">{manager.description}</p>
+                        {/* Vote Statistics */}
+                        <div className="bg-gray-700/30 rounded-lg p-3">
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-400">Total Votes:</span>
+                              <span className="text-white font-medium ml-2">
+                                {formatUnits(proposal.forVotes + proposal.againstVotes + proposal.abstainVotes, 18)}
+                              </span>
+                          </div>
+                            <div>
+                              <span className="text-gray-400">Participation:</span>
+                              <span className="text-blue-400 font-medium ml-2">
+                                {proposalCount > 0 ? 
+                                  `${((Number(proposal.forVotes + proposal.againstVotes + proposal.abstainVotes) / Number(proposalCount)) * 100).toFixed(1)}%` 
+                                  : '0%'
+                                }
+                              </span>
+                              </div>
+                            <div>
+                              <span className="text-gray-400">For %:</span>
+                              <span className="text-green-400 font-medium ml-2">
+                                {proposal.forVotes + proposal.againstVotes + proposal.abstainVotes > BigInt(0) ? 
+                                  `${((Number(proposal.forVotes) / Number(proposal.forVotes + proposal.againstVotes + proposal.abstainVotes)) * 100).toFixed(1)}%` 
+                                  : '0%'
+                                }
+                              </span>
+                          </div>
+                            <div>
+                              <span className="text-gray-400">Against %:</span>
+                              <span className="text-red-400 font-medium ml-2">
+                                {proposal.forVotes + proposal.againstVotes + proposal.abstainVotes > BigInt(0) ? 
+                                  `${((Number(proposal.againstVotes) / Number(proposal.forVotes + proposal.againstVotes + proposal.abstainVotes)) * 100).toFixed(1)}%` 
+                                  : '0%'
+                                }
+                              </span>
                             </div>
                           </div>
+                        </div>
+                      </div>
 
-                          <div className="flex-shrink-0">
-                            {selectedManager === manager.name && (
-                              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                                <Check className="h-5 w-5 text-white" />
+                      {/* Enhanced Vote Action UI */}
+                      {proposal.status === ProposalStatus.ACTIVE && (
+                        <div className="border-t border-gray-700 pt-6">
+                          <div className="space-y-6">
+                            {/* Vote Header */}
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                <Vote className="h-4 w-4 text-blue-400" />
+                              </div>
+                              <div>
+                                <h4 className="text-white font-semibold">Cast Your Vote</h4>
+                                <p className="text-gray-400 text-sm">Your vote will be recorded on-chain</p>
+                              </div>
+                            </div>
+
+                            {/* Quick Vote Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                              <div 
+                                className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-105 ${
+                                  proposalVotes[proposal.id]?.support === VoteType.FOR
+                                    ? 'border-green-500 bg-green-500/10'
+                                    : 'border-gray-600 bg-gray-700/30 hover:border-green-500/50'
+                                }`}
+                                onClick={() => updateProposalVote(proposal.id, 'support', VoteType.FOR)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                    proposalVotes[proposal.id]?.support === VoteType.FOR
+                                      ? 'bg-green-500'
+                                      : 'bg-gray-600'
+                                  }`}>
+                                    <ThumbsUp className="h-5 w-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-white font-medium">Vote For</h5>
+                                    <p className="text-gray-400 text-sm">Support this proposal</p>
+                                  </div>
+                                </div>
+                                {proposalVotes[proposal.id]?.support === VoteType.FOR && (
+                                  <div className="absolute top-2 right-2">
+                                    <CheckCircle className="h-5 w-5 text-green-400" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div 
+                                className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-105 ${
+                                  proposalVotes[proposal.id]?.support === VoteType.AGAINST
+                                    ? 'border-red-500 bg-red-500/10'
+                                    : 'border-gray-600 bg-gray-700/30 hover:border-red-500/50'
+                                }`}
+                                onClick={() => updateProposalVote(proposal.id, 'support', VoteType.AGAINST)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                    proposalVotes[proposal.id]?.support === VoteType.AGAINST
+                                      ? 'bg-red-500'
+                                      : 'bg-gray-600'
+                                  }`}>
+                                    <ThumbsDown className="h-5 w-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-white font-medium">Vote Against</h5>
+                                    <p className="text-gray-400 text-sm">Oppose this proposal</p>
+                                  </div>
+                                </div>
+                                {proposalVotes[proposal.id]?.support === VoteType.AGAINST && (
+                                  <div className="absolute top-2 right-2">
+                                    <CheckCircle className="h-5 w-5 text-red-400" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div 
+                                className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-105 ${
+                                  proposalVotes[proposal.id]?.support === VoteType.ABSTAIN
+                                    ? 'border-gray-500 bg-gray-500/10'
+                                    : 'border-gray-600 bg-gray-700/30 hover:border-gray-500/50'
+                                }`}
+                                onClick={() => updateProposalVote(proposal.id, 'support', VoteType.ABSTAIN)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                    proposalVotes[proposal.id]?.support === VoteType.ABSTAIN
+                                      ? 'bg-gray-500'
+                                      : 'bg-gray-600'
+                                  }`}>
+                                    <HelpCircle className="h-5 w-5 text-white" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-white font-medium">Abstain</h5>
+                                    <p className="text-gray-400 text-sm">Neutral position</p>
+                                  </div>
+                                </div>
+                                {proposalVotes[proposal.id]?.support === VoteType.ABSTAIN && (
+                                  <div className="absolute top-2 right-2">
+                                    <CheckCircle className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Vote Reason Input */}
+                            <div className="space-y-3">
+                              <Label className="text-gray-300 font-medium">Vote Reason (Optional)</Label>
+                              <Textarea
+                                placeholder="Explain your reasoning for this vote... (optional)"
+                                value={proposalVotes[proposal.id]?.reason || ""}
+                                onChange={(e) => updateProposalVote(proposal.id, 'reason', e.target.value)}
+                                className="min-h-[80px] resize-none"
+                                rows={3}
+                              />
+                            </div>
+
+                            {/* Voting Power & Action */}
+                            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-4">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                    <Zap className="h-4 w-4 text-blue-400" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-white font-medium">Your Voting Power</h5>
+                                    <p className="text-gray-400 text-sm">Based on your URIP tokens</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold text-white">{votingPower}</div>
+                                  <div className="text-sm text-blue-400">URIP Tokens</div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <Button
+                                  onClick={() => handleVote(proposal.id)}
+                                  disabled={isWritePending || !proposalVotes[proposal.id]?.support}
+                                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3"
+                                  size="lg"
+                                >
+                                  {isWritePending ? (
+                                    <>
+                                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                      Processing Vote...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Vote className="h-5 w-5 mr-2" />
+                                      Cast Vote
+                                    </>
+                                  )}
+                                </Button>
+                                
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleQuickVote(proposal.id, VoteType.FOR, "I support this proposal")}
+                                  disabled={isWritePending}
+                                  className="bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20"
+                                >
+                                  <ThumbsUp className="h-4 w-4 mr-1" />
+                                  Quick For
+                                </Button>
+                                
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleQuickVote(proposal.id, VoteType.AGAINST, "I oppose this proposal")}
+                                  disabled={isWritePending}
+                                  className="bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                                >
+                                  <ThumbsDown className="h-4 w-4 mr-1" />
+                                  Quick Against
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* User's Previous Vote */}
+                            {userVotes[proposal.id] && (
+                              <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-xl p-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                                    <CheckCircle className="h-4 w-4 text-green-400" />
+                                  </div>
+                                  <div>
+                                    <h5 className="text-white font-medium">Your Previous Vote</h5>
+                                    <p className="text-gray-400 text-sm">You have already voted on this proposal</p>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-3">
+                                    <Badge className={
+                                      userVotes[proposal.id].support === VoteType.FOR 
+                                        ? "bg-green-500/20 text-green-400 border-green-500/20"
+                                        : userVotes[proposal.id].support === VoteType.AGAINST
+                                        ? "bg-red-500/20 text-red-400 border-red-500/20"
+                                        : "bg-gray-500/20 text-gray-400 border-gray-500/20"
+                                    }>
+                                      {getVoteTypeName(userVotes[proposal.id].support)}
+                                    </Badge>
+                                    <span className="text-sm text-gray-400">
+                                      {new Date(userVotes[proposal.id].timestamp).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  {userVotes[proposal.id].reason && (
+                                    <div className="text-sm text-gray-300 bg-gray-800/50 rounded-lg p-3">
+                                      <span className="text-gray-400 font-medium">Reason: </span>
+                                      {userVotes[proposal.id].reason}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
                         </div>
-
-                        {/* Performance Metrics */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                          <div className="text-center p-3 bg-emerald-500/15 rounded-lg border border-emerald-500/30">
-                            <div className="text-lg font-bold text-emerald-300 mb-1">
-                              +{manager.performance.totalReturn}%
-                            </div>
-                            <div className="text-xs text-gray-300">Total Return</div>
-                          </div>
-                          <div className="text-center p-3 bg-blue-500/15 rounded-lg border border-blue-500/30">
-                            <div className="text-lg font-bold text-blue-300 mb-1">
-                              {manager.performance.sharpeRatio}
-                            </div>
-                            <div className="text-xs text-gray-300">Sharpe Ratio</div>
-                          </div>
-                          <div className="text-center p-3 bg-rose-500/15 rounded-lg border border-rose-500/30">
-                            <div className="text-lg font-bold text-rose-300 mb-1">
-                              {manager.performance.maxDrawdown}%
-                            </div>
-                            <div className="text-xs text-gray-300">Max Drawdown</div>
-                          </div>
-                          <div className="text-center p-3 bg-purple-500/15 rounded-lg border border-purple-500/30">
-                            <div className="text-lg font-bold text-purple-300 mb-1">
-                              {manager.performance.winRate}%
-                            </div>
-                            <div className="text-xs text-gray-300">Win Rate</div>
-                          </div>
-                        </div>
-
-                        {/* Asset Allocation */}
-                        <div className="mb-4 p-4 bg-gray-700/40 rounded-lg border border-gray-600/50">
-                          <div className="flex items-center gap-2 mb-3">
-                            <PieChart className="h-4 w-4 text-amber-400" />
-                            <h4 className="text-sm font-semibold text-white">Asset Allocation</h4>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
-                            {manager.assetAllocation.map((asset, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs">
-                                <div className={`w-2 h-2 rounded-full ${idx === 0 ? "bg-blue-500" :
-                                    idx === 1 ? "bg-emerald-500" :
-                                      idx === 2 ? "bg-purple-500" :
-                                        idx === 3 ? "bg-amber-500" :
-                                          "bg-rose-500"
-                                  }`}></div>
-                                <span className="text-white font-medium">{asset.symbol}</span>
-                                <span className="text-gray-300">{asset.percentage}%</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="bg-gray-600/30 rounded-md p-1 overflow-hidden">
-                            <div className="flex h-2 rounded-sm overflow-hidden">
-                              {manager.assetAllocation.map((asset, idx) => (
-                                <div
-                                  key={idx}
-                                  className={`${idx === 0 ? "bg-blue-500" :
-                                      idx === 1 ? "bg-emerald-500" :
-                                        idx === 2 ? "bg-purple-500" :
-                                          idx === 3 ? "bg-amber-500" :
-                                            "bg-rose-500"
-                                    }`}
-                                  style={{ width: `${asset.percentage}%` }}
-                                ></div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Strategies and Fee */}
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 p-3 bg-gray-700/30 rounded-lg">
-                          <div className="flex flex-wrap gap-2">
-                            {manager.strategies.slice(0, 3).map((strategy, idx) => (
-                              <Badge key={idx} variant="outline" className="bg-gray-700/50 border-gray-500 text-gray-200 text-xs">
-                                <Zap className="h-3 w-3 mr-1 text-amber-400" />
-                                {strategy}
-                              </Badge>
-                            ))}
-                          </div>
-                          <div className="text-xs text-gray-300">
-                            Management: {manager.feeStructure.management}% • Performance: {manager.feeStructure.performance}%
-                          </div>
-                        </div>
-
-                        {/* Vote Progress */}
-                        <div className="bg-gray-700/40 rounded-lg p-3">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-white">Current Votes</span>
-                            <div className="text-right">
-                              <div className="text-sm font-bold text-blue-400">{votePercentage.toFixed(1)}%</div>
-                              <div className="text-xs text-gray-300">{voteData?.votes || 0} voters</div>
-                            </div>
-                          </div>
-                          <Progress value={votePercentage} className="h-2 bg-gray-600" />
-                        </div>
+                      )}
                       </CardContent>
                     </Card>
-                  );
-                })}
+                ))}
               </div>
-            </div>
+            )}
+          </TabsContent>
 
-            {/* Recent Voting Activity */}
-            <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-xl overflow-hidden">
-              <CardHeader className="bg-dark-bg-secondary/50 border-b border-dark-border">
-                <CardTitle className="text-xl font-bold flex items-center gap-3 text-dark-text-primary">
-                  <div className="w-8 h-8 bg-dark-accent-blue/20 rounded-lg flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-dark-accent-blue" />
-                  </div>
-                  Recent Votes
+          {/* Delegate Tab */}
+          <TabsContent value="delegate" className="space-y-6">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  Delegate Voting Power
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-3">
-                  {votingData.votes.slice(0, 8).map((vote, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg border border-gray-600">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                          {vote.voter.charAt(0).toUpperCase()}
-                        </div>
+              <CardContent className="space-y-4">
                         <div>
-                          <div className="font-medium text-white text-sm">{vote.voter}</div>
-                          <div className="text-sm text-gray-200">Voted for <span className="text-blue-200 font-medium">{vote.vote}</span></div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-blue-200">{vote.power}</div>
-                        <div className="text-xs text-gray-200">voting power</div>
-                      </div>
-                    </div>
-                  ))}
+                  <Label htmlFor="delegate-address" className="text-gray-400">
+                    Delegate Address
+                  </Label>
+                  <Input
+                    id="delegate-address"
+                    placeholder="0x..."
+                    value={delegateAddress}
+                    onChange={(e) => setDelegateAddress(e.target.value)}
+                    className="mt-1"
+                  />
                 </div>
+                <Button
+                  onClick={handleDelegate}
+                  disabled={!delegateAddress || isWritePending}
+                  className="w-full"
+                >
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Delegate Voting Power
+                </Button>
+                <p className="text-sm text-gray-400">
+                  Delegating your voting power allows another address to vote on your behalf.
+                  You can change or remove your delegation at any time.
+                </p>
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
 
-          {/* Right Sidebar - Voting Panel */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24 space-y-6">
-              {/* Cast Your Vote */}
-              <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-xl">
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-xl font-bold text-dark-text-primary">Cast Your Vote</CardTitle>
+          {/* Create Proposal Tab */}
+          <TabsContent value="create" className="space-y-6">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Create New Proposal
+                </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {selectedManager ? (
-                    <div className="p-4 bg-blue-500/25 border-2 border-blue-400 rounded-lg">
-                      <div className="text-center">
-                        <CheckCircle className="h-8 w-8 text-blue-200 mx-auto mb-2" />
-                        <div className="font-bold mb-1 text-white">Selected:</div>
-                        <div className="text-blue-200 font-medium text-lg">{selectedManager}</div>
-                        <p className="text-sm text-gray-200 mt-2">
-                          Voting with <span className="font-bold text-blue-200">{userVotingPower}</span> power
-                        </p>
+                <div>
+                  <Label htmlFor="proposal-title" className="text-gray-400">
+                    Title *
+                  </Label>
+                  <Input
+                    id="proposal-title"
+                    placeholder="Proposal title..."
+                    value={proposalForm.title}
+                    onChange={(e) => setProposalForm({ ...proposalForm, title: e.target.value })}
+                    className="mt-1"
+                  />
                       </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-gray-700 border-2 border-gray-600 rounded-lg text-center">
-                      <AlertCircle className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                      <div className="font-bold mb-1 text-white">No Selection</div>
-                      <p className="text-sm text-gray-200">Select a candidate below</p>
-                    </div>
-                  )}
 
-                  <Button
-                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50 font-medium"
-                    disabled={!selectedManager}
-                    onClick={handleVote}
+                <div>
+                  <Label htmlFor="proposal-description" className="text-gray-400">
+                    Description *
+                  </Label>
+                  <Textarea
+                    id="proposal-description"
+                    placeholder="Detailed description of the proposal..."
+                    value={proposalForm.description}
+                    onChange={(e) => setProposalForm({ ...proposalForm, description: e.target.value })}
+                    className="mt-1"
+                    rows={4}
+                  />
+                    </div>
+
+                <div>
+                  <Label htmlFor="proposal-category" className="text-gray-400">
+                    Category
+                  </Label>
+                  <Select
+                    value={proposalForm.category.toString()}
+                    onValueChange={(value) => setProposalForm({ ...proposalForm, category: Number(value) as ProposalCategory })}
                   >
-                    <Vote className="h-4 w-4 mr-2" />
-                    {selectedManager ? `Vote for ${selectedManager}` : 'Select a Candidate'}
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ProposalCategory.FUND_MANAGEMENT.toString()}>
+                        Fund Management
+                      </SelectItem>
+                      <SelectItem value={ProposalCategory.PROTOCOL_GOVERNANCE.toString()}>
+                        Protocol Governance
+                      </SelectItem>
+                      <SelectItem value={ProposalCategory.TREASURY_MANAGEMENT.toString()}>
+                        Treasury Management
+                      </SelectItem>
+                      <SelectItem value={ProposalCategory.EMERGENCY_ACTION.toString()}>
+                        Emergency Action
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  onClick={handleCreateProposal}
+                  disabled={!proposalForm.title || !proposalForm.description || isWritePending}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Proposal
                   </Button>
-                </CardContent>
-              </Card>
 
-              {/* Voting Deadline */}
-              <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-xl">
-                <CardContent className="p-4 text-center">
-                  <div className="text-sm text-dark-text-secondary mb-2">Voting ends in</div>
-                  <div className="text-2xl font-bold text-dark-text-primary mb-1">
-                    {timeRemaining.days}d {timeRemaining.hours}h
-                  </div>
-                  <div className="text-sm text-dark-text-secondary">
-                    {timeRemaining.minutes}m {timeRemaining.seconds}s
-                  </div>
+                <p className="text-sm text-gray-400">
+                  Creating a proposal requires sufficient voting power. The minimum threshold varies by category.
+                </p>
                 </CardContent>
               </Card>
-
-              {/* Voting Requirements */}
-              <Card className="bg-dark-bg-secondary/80 backdrop-blur-lg border border-dark-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold text-dark-text-primary">Voting Requirements</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-200">Quorum</span>
-                    <span className="font-bold text-blue-200">{votingData.proposal.requiredQuorum}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-200">Current Progress</span>
-                    <span className="font-bold text-white">{quorumPercentage.toFixed(1)}%</span>
-                  </div>
-                  <Progress value={quorumPercentage} className="h-3 bg-gray-600" />
-                  <div className="text-center">
-                    <Badge className={hasQuorum ? "bg-emerald-500/30 text-emerald-200 border-emerald-400" : "bg-amber-500/30 text-amber-200 border-amber-400"}>
-                      {hasQuorum ? "✓ Quorum Reached" : "Pending Quorum"}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          </TabsContent>
+        </Tabs>
         </div>
-      </main>
     </div>
   )
-}
-
-// Main DAO page component with authentication protection
-export default function DAOPage() {
-  return (
-    <ProtectedRoute>
-      <DAOPageContent />
-    </ProtectedRoute>
-  );
 } 
