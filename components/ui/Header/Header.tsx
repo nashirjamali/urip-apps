@@ -52,13 +52,12 @@ export default function Header() {
           ))}
         </div>
         <div className="flex items-center space-x-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"
+          <Link
+            href={"/login"}
+            className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2 py-2 px-8"
           >
             Connect Xellar Kit
-          </Button>
+          </Link>
         </div>
       </div>
     </nav>
