@@ -154,13 +154,6 @@ export const AssetTokensGrid = () => {
               </div>
               
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Total Supply:</span>
-                <span className="font-medium">
-                  {parseFloat(token.totalSupply).toLocaleString()} {token.symbol}
-                </span>
-              </div>
-              
-              <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Last Update:</span>
                 <span className="font-medium text-xs">
                   {new Date(token.lastUpdate * 1000).toLocaleDateString()}

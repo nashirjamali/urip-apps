@@ -542,7 +542,7 @@ function DashboardContent() {
       return sum + (parseFloat(asset.balance) * parseFloat(asset.currentPrice));
     }, 0);
 
-    return userHoldings.map(asset => {
+    return userHoldings.map((asset, index) => {
       const assetValue = parseFloat(asset.balance) * parseFloat(asset.currentPrice);
       const percentage = totalValue > 0 ? (assetValue / totalValue) * 100 : 0;
 
@@ -550,12 +550,13 @@ function DashboardContent() {
         name: asset.name,
         percentage: Math.round(percentage * 100) / 100, // Round to 2 decimal places
         value: assetValue,
-        logoColor: asset.assetType === 'STOCK' ? 'bg-blue-500' : 'bg-amber-500'
+        logoColor: asset.assetType === 'STOCK' ? 'bg-blue-500' : 'bg-amber-500',
+        colorIndex: index // Add index for color assignment
       };
     }).sort((a, b) => b.value - a.value); // Sort by value descending
   }, [userHoldings]);
 
-  // Color mapping function
+  // Color mapping function with more distinct colors
   const colorClasses: Record<string, string> = {
     "bg-amber-500": "#f59e0b",
     "bg-indigo-500": "#4f46e5",
@@ -563,11 +564,44 @@ function DashboardContent() {
     "bg-blue-500": "#3b82f6",
     "bg-pink-500": "#ec4899",
     "bg-red-500": "#ef4444",
-    "bg-green-500": "#10b981"
+    "bg-green-500": "#10b981",
+    "bg-emerald-500": "#10b981",
+    "bg-cyan-500": "#06b6d4",
+    "bg-teal-500": "#14b8a6",
+    "bg-lime-500": "#84cc16",
+    "bg-orange-500": "#f97316",
+    "bg-rose-500": "#f43f5e",
+    "bg-violet-500": "#8b5cf6",
+    "bg-sky-500": "#0ea5e9",
+    "bg-slate-500": "#64748b"
   };
+
+  // Array of distinct colors for portfolio allocation
+  const portfolioColors = [
+    "#3b82f6", // Blue
+    "#f59e0b", // Amber
+    "#10b981", // Green
+    "#ef4444", // Red
+    "#8b5cf6", // Purple
+    "#ec4899", // Pink
+    "#06b6d4", // Cyan
+    "#f97316", // Orange
+    "#84cc16", // Lime
+    "#f43f5e", // Rose
+    "#0ea5e9", // Sky
+    "#14b8a6", // Teal
+    "#64748b", // Slate
+    "#7c3aed", // Violet
+    "#059669", // Emerald
+    "#dc2626"  // Red-600
+  ];
 
   const getColor = (logoColor: string): string => {
     return colorClasses[logoColor as keyof typeof colorClasses] || "#4f46e5";
+  };
+
+  const getPortfolioColor = (index: number): string => {
+    return portfolioColors[index % portfolioColors.length];
   };
 
   // Remove the unused useEffect that was causing errors
@@ -885,7 +919,7 @@ function DashboardContent() {
                           .slice(0, index)
                           .reduce((sum, prevItem) => sum + (prevItem.percentage / 100) * 360, 0);
                         
-                        const color = getColor(item.logoColor);
+                        const color = getPortfolioColor(index);
                         
                         return (
                           <div
@@ -944,8 +978,8 @@ function DashboardContent() {
                   ))
                 ) : portfolioAllocation.length > 0 ? (
                   portfolioAllocation.map((item, index) => {
-                    // Get color using the helper function
-                    const color = getColor(item.logoColor);
+                    // Get color using the new portfolio color system
+                    const color = getPortfolioColor(index);
 
                     return (
                       <div key={index} className="flex items-center">
@@ -1000,8 +1034,8 @@ function DashboardContent() {
                     ))
                   ) : portfolioAllocation.length > 0 ? (
                     portfolioAllocation.map((item, index) => {
-                      // Get color using the helper function
-                      const color = getColor(item.logoColor);
+                      // Get color using the new portfolio color system
+                      const color = getPortfolioColor(index);
 
                       return (
                         <tr key={index} className="border-b border-dark-border/30 last:border-b-0 hover:bg-dark-input/20">
@@ -1194,18 +1228,6 @@ function DashboardContent() {
                     <div className="flex items-center justify-end">
                       <span className="font-medium text-dark-text-secondary">Last Update</span>
                       {sortBy === "change" && (
-                        <span className="ml-1 text-dark-accent-blue">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                      )}
-                    </div>
-                  </th>
-                  <th className="text-right py-3 px-4 border-b border-dark-border/30 font-medium text-dark-text-secondary">Total Supply</th>
-                  <th
-                    className="text-left py-3 px-4 cursor-pointer hover:bg-dark-input/30 border-b border-dark-border/30"
-                    onClick={() => handleSortChange("country")}
-                  >
-                    <div className="flex items-center">
-                      <span className="font-medium text-dark-text-secondary">Type</span>
-                      {sortBy === "country" && (
                         <span className="ml-1 text-dark-accent-blue">{sortOrder === "asc" ? "↑" : "↓"}</span>
                       )}
                     </div>
