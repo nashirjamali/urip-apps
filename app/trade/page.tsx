@@ -383,25 +383,6 @@ function TradePageContent() {
                           </Badge>
                         </div>
                         
-                        {/* Price and market cap */}
-                        <div className="space-y-3 mb-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-400">Current Price</span>
-                            <span className="text-xl font-bold text-white">
-                              ${formatPrice(token.currentPrice)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-400">Market Cap</span>
-                            <span className="text-sm font-medium text-gray-300">
-                              {marketCap >= 1e9 ? `$${(marketCap / 1e9).toFixed(2)}B` :
-                               marketCap >= 1e6 ? `$${(marketCap / 1e6).toFixed(2)}M` :
-                               marketCap >= 1e3 ? `$${(marketCap / 1e3).toFixed(2)}K` :
-                               `$${marketCap.toFixed(2)}`}
-                            </span>
-                          </div>
-                        </div>
                         
                         {/* User holdings */}
                         {userBalance > 0 && (
@@ -510,17 +491,6 @@ function TradePageContent() {
                          <div className="flex items-center justify-end">
                            <span className="font-medium text-gray-400">Market Cap</span>
                            {sortBy === "marketCap" && (
-                             <span className="ml-1 text-blue-400">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                           )}
-                         </div>
-                       </th>
-                       <th 
-                         className="text-right py-3 px-4 cursor-pointer hover:bg-gray-700/30 border-b border-gray-700/30"
-                         onClick={() => handleSortChange("supply")}
-                       >
-                         <div className="flex items-center justify-end">
-                           <span className="font-medium text-gray-400">Total Supply</span>
-                           {sortBy === "supply" && (
                              <span className="ml-1 text-blue-400">{sortOrder === "asc" ? "↑" : "↓"}</span>
                            )}
                          </div>

@@ -1,7 +1,10 @@
+"use client"
+
 import Link from "next/link";
 import React from "react";
 import { Button } from "../button";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface NavItem {
   label: string;
@@ -28,6 +31,7 @@ const NavItems: NavItem[] = [
 ];
 
 export default function Header() {
+  const router = useRouter();
   return (
     <nav className="fixed top-4 left-4 right-4 z-50 w-auto mx-auto max-w-7xl py-3 px-6 rounded-2xl backdrop-filter backdrop-blur-2xl bg-black/20 border border-white/20 shadow-2xl shadow-black/10 hover:shadow-black/15 transition-all duration-300 hover:bg-black/30">
       <div className="flex items-center justify-between gap-4">
@@ -52,12 +56,14 @@ export default function Header() {
           ))}
         </div>
         <div className="flex items-center space-x-3">
-          <Link
-            href={"/login"}
-            className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2 py-2 px-8"
+          <Button
+            onClick={() => router.push("/dashboard")}
+            variant="outline"
+            size="sm"
+            className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"
           >
             Connect Xellar Kit
-          </Link>
+          </Button>
         </div>
       </div>
     </nav>

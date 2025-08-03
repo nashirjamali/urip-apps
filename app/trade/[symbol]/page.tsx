@@ -381,12 +381,6 @@ function TokenDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Total Supply</p>
-                    <p className="text-lg font-bold text-white">
-                      {parseFloat(selectedToken.totalSupply).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
                     <p className="text-sm text-gray-400">Market Cap</p>
                     <p className="text-lg font-bold text-white">
                       {formatMarketCap(selectedToken.totalSupply, selectedToken.currentPrice)}
