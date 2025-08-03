@@ -57,6 +57,9 @@ import Navigation from '@/components/Navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
+import { useAssetTokens, AssetTokenData } from '@/hooks/useAssetTokens';
+import { useURIPContract } from '@/hooks/useURIPContract';
+import { useTransactionHistory, Transaction } from '@/hooks/useTransactionHistory';
 
 // Import custom portfolio chart
 import PortfolioChart from '../../components/PortfolioChart'
@@ -299,17 +302,89 @@ const performanceData = [
 function PortfolioPageContent() {
   const [isDark, setIsDark] = useState(true)
   const [selectedTimeframe, setSelectedTimeframe] = useState("1M")
-  const [selectedAsset, setSelectedAsset] = useState(portfolioAssets[0])
+  const [selectedAsset, setSelectedAsset] = useState<any>(null)
   const [showAddAssetModal, setShowAddAssetModal] = useState(false)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
   const [sortBy, setSortBy] = useState("value")
   const [searchTerm, setSearchTerm] = useState("")
   const [isClient, setIsClient] = useState(false)
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [showTransactionModal, setShowTransactionModal] = useState(false)
   const { address } = useAccount();
   const router = useRouter();
+
+  // Smart contract data
+  const {
+    assetTokens,
+    totalPortfolioValue: assetPortfolioValue,
+    userHoldings,
+    isLoading: assetsLoading,
+    refetch
+  } = useAssetTokens();
+
+  // Transaction history data
+  const {
+    transactions: realTransactions,
+    isLoading: transactionsLoading,
+    error: transactionsError,
+    hasMore: hasMoreTransactions,
+    loadMore: loadMoreTransactions,
+    refresh: refreshTransactions,
+    formatTransactionValue,
+    formatGasFee,
+    getTransactionType,
+    formatTimestamp,
+    getAddressDisplayName,
+    getTransactionMethodName,
+    hasTokenTransfers,
+    getPrimaryTokenTransfer,
+  } = useTransactionHistory(20);
+
+  const {
+    uripBalance,
+    currentNAV,
+    usdtBalance,
+    fundStats,
+    isLoading: uripLoading
+  } = useURIPContract();
+
+  // Calculate real portfolio data
+  const realPortfolioData = {
+    totalValue: (parseFloat(uripBalance) * parseFloat(currentNAV)) + assetPortfolioValue,
+    totalChange: 12.5, // This would need to be calculated from historical data
+    totalChangeAmount: ((parseFloat(uripBalance) * parseFloat(currentNAV)) + assetPortfolioValue) * 0.125,
+    totalInvested: (parseFloat(uripBalance) * parseFloat(currentNAV)) + assetPortfolioValue, // Simplified for now
+    totalProfit: ((parseFloat(uripBalance) * parseFloat(currentNAV)) + assetPortfolioValue) * 0.125, // Simplified
+    profitPercentage: 12.5 // This would need historical data
+  };
+
+  // Convert userHoldings to portfolio assets format
+  const realPortfolioAssets = userHoldings.map((asset, index) => {
+    const assetValue = parseFloat(asset.balance) * parseFloat(asset.currentPrice);
+    const totalValue = realPortfolioData.totalValue;
+    const allocation = totalValue > 0 ? (assetValue / totalValue) * 100 : 0;
+    
+    return {
+      id: index + 1,
+      name: asset.name,
+      symbol: asset.symbol,
+      logo: "/placeholder-logo.svg",
+      logoColor: asset.assetType === 'STOCK' ? "bg-blue-500" : "bg-amber-500",
+      quantity: parseFloat(asset.balance),
+      avgPrice: parseFloat(asset.currentPrice), // Simplified - would need purchase history
+      currentPrice: parseFloat(asset.currentPrice),
+      currentValue: assetValue,
+      change24h: 0, // Would need price history
+      changeAmount: 0, // Would need price history
+      profitLoss: 0, // Would need purchase history
+      profitLossPercentage: 0, // Would need purchase history
+      allocation: allocation,
+      assetType: asset.assetType,
+      isActive: asset.isActive,
+      lastUpdate: asset.lastUpdate
+    };
+  });
   useEffect(() => {
     setIsClient(true)
   }, [])
@@ -330,7 +405,7 @@ function PortfolioPageContent() {
   }
 
   // Sort assets
-  const sortedAssets = [...portfolioAssets].sort((a, b) => {
+  const sortedAssets = [...realPortfolioAssets].sort((a, b) => {
     switch (sortBy) {
       case "value":
         return b.currentValue - a.currentValue
@@ -375,8 +450,23 @@ function PortfolioPageContent() {
           <div>
             <h1 className="text-2xl font-bold text-white">Portfolio</h1>
             <p className="text-gray-400 text-sm mt-1">Track your investments and performance</p>
+            {assetsLoading && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-blue-400">Loading portfolio data...</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="border-gray-700 text-gray-300 hover:text-white"
+              onClick={() => refetch()}
+              disabled={assetsLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${assetsLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white">
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -395,10 +485,16 @@ function PortfolioPageContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Total Portfolio Value</p>
-                  <p className="text-2xl font-bold">{formatCurrency(portfolioData.totalValue)}</p>
-                  <div className={`flex items-center text-sm ${portfolioData.totalChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {portfolioData.totalChange >= 0 ? <ArrowUp className="h-4 w-4 mr-1" /> : <ArrowDown className="h-4 w-4 mr-1" />}
-                    {formatPercentage(portfolioData.totalChange)} ({formatCurrency(portfolioData.totalChangeAmount)})
+                  <p className="text-2xl font-bold">
+                    {assetsLoading || uripLoading ? (
+                      <div className="w-32 h-8 bg-gray-600/50 rounded animate-pulse"></div>
+                    ) : (
+                      formatCurrency(realPortfolioData.totalValue)
+                    )}
+                  </p>
+                  <div className={`flex items-center text-sm ${realPortfolioData.totalChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {realPortfolioData.totalChange >= 0 ? <ArrowUp className="h-4 w-4 mr-1" /> : <ArrowDown className="h-4 w-4 mr-1" />}
+                    {formatPercentage(realPortfolioData.totalChange)} ({formatCurrency(realPortfolioData.totalChangeAmount)})
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center">
@@ -413,7 +509,13 @@ function PortfolioPageContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Total Invested</p>
-                  <p className="text-2xl font-bold">{formatCurrency(portfolioData.totalInvested)}</p>
+                  <p className="text-2xl font-bold">
+                    {assetsLoading || uripLoading ? (
+                      <div className="w-32 h-8 bg-gray-600/50 rounded animate-pulse"></div>
+                    ) : (
+                      formatCurrency(realPortfolioData.totalInvested)
+                    )}
+                  </p>
                   <p className="text-sm text-gray-400">Initial capital</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center">
@@ -428,11 +530,15 @@ function PortfolioPageContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Total Profit/Loss</p>
-                  <p className={`text-2xl font-bold ${portfolioData.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {formatCurrency(portfolioData.totalProfit)}
+                  <p className={`text-2xl font-bold ${realPortfolioData.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {assetsLoading || uripLoading ? (
+                      <div className="w-32 h-8 bg-gray-600/50 rounded animate-pulse"></div>
+                    ) : (
+                      formatCurrency(realPortfolioData.totalProfit)
+                    )}
                   </p>
-                  <p className={`text-sm ${portfolioData.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {formatPercentage(portfolioData.profitPercentage)}
+                  <p className={`text-sm ${realPortfolioData.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {formatPercentage(realPortfolioData.profitPercentage)}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-purple-600/20 flex items-center justify-center">
@@ -447,8 +553,20 @@ function PortfolioPageContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Assets</p>
-                  <p className="text-2xl font-bold">{portfolioAssets.length}</p>
-                  <p className="text-sm text-gray-400">Different cryptocurrencies</p>
+                  <p className="text-2xl font-bold">
+                    {assetsLoading ? (
+                      <div className="w-8 h-8 bg-gray-600/50 rounded animate-pulse"></div>
+                    ) : (
+                      realPortfolioAssets.length
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {assetsLoading ? (
+                      <div className="w-24 h-4 bg-gray-600/30 rounded animate-pulse"></div>
+                    ) : (
+                      `${realPortfolioAssets.filter(a => a.assetType === 'STOCK').length} stocks, ${realPortfolioAssets.filter(a => a.assetType === 'COMMODITY').length} commodities`
+                    )}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-amber-600/20 flex items-center justify-center">
                   <Coins className="h-6 w-6 text-amber-400" />
@@ -492,25 +610,44 @@ function PortfolioPageContent() {
                   <CardTitle className="text-lg font-medium">Asset Allocation</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {portfolioAssets.slice(0, 5).map((asset) => (
-                      <div key={asset.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${asset.logoColor}`}></div>
-                          <span className="text-sm">{asset.symbol}</span>
+                  {assetsLoading ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-gray-600/50 animate-pulse"></div>
+                            <div className="w-16 h-4 bg-gray-600/50 rounded animate-pulse"></div>
+                          </div>
+                          <div className="w-12 h-4 bg-gray-600/50 rounded animate-pulse"></div>
                         </div>
-                        <span className="text-sm font-medium">{asset.allocation.toFixed(1)}%</span>
-                      </div>
-                    ))}
-                    {portfolioAssets.length > 5 && (
-                      <div className="flex items-center justify-between text-gray-400">
-                        <span className="text-sm">Others</span>
-                        <span className="text-sm">
-                          {(100 - portfolioAssets.slice(0, 5).reduce((sum, asset) => sum + asset.allocation, 0)).toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  ) : realPortfolioAssets.length > 0 ? (
+                    <div className="space-y-3">
+                      {realPortfolioAssets.slice(0, 5).map((asset) => (
+                        <div key={asset.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${asset.logoColor}`}></div>
+                            <span className="text-sm">{asset.symbol}</span>
+                          </div>
+                          <span className="text-sm font-medium">{asset.allocation.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                      {realPortfolioAssets.length > 5 && (
+                        <div className="flex items-center justify-between text-gray-400">
+                          <span className="text-sm">Others</span>
+                          <span className="text-sm">
+                            {(100 - realPortfolioAssets.slice(0, 5).reduce((sum, asset) => sum + asset.allocation, 0)).toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <Coins className="h-8 w-8 mx-auto mb-2" />
+                      <p>No assets found</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -521,30 +658,55 @@ function PortfolioPageContent() {
                 <CardTitle className="text-lg font-medium">Top Performers</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {portfolioAssets
-                    .sort((a, b) => b.profitLossPercentage - a.profitLossPercentage)
-                    .slice(0, 3)
-                    .map((asset, index) => (
-                      <div key={asset.id} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+                {assetsLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full ${asset.logoColor} flex items-center justify-center text-white font-bold text-sm`}>
-                            {asset.name.charAt(0)}
-                          </div>
+                          <div className="w-8 h-8 rounded-full bg-gray-600/50 animate-pulse"></div>
                           <div>
-                            <div className="font-medium">{asset.name}</div>
-                            <div className="text-sm text-gray-400">{asset.symbol}</div>
+                            <div className="w-20 h-4 bg-gray-600/50 rounded animate-pulse mb-1"></div>
+                            <div className="w-16 h-3 bg-gray-600/30 rounded animate-pulse"></div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className={`font-medium ${asset.profitLossPercentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {formatPercentage(asset.profitLossPercentage)}
-                          </div>
-                          <div className="text-sm text-gray-400">{formatCurrency(asset.profitLoss)}</div>
+                          <div className="w-16 h-4 bg-gray-600/50 rounded animate-pulse mb-1"></div>
+                          <div className="w-20 h-3 bg-gray-600/30 rounded animate-pulse"></div>
                         </div>
                       </div>
                     ))}
-                </div>
+                  </div>
+                ) : realPortfolioAssets.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {realPortfolioAssets
+                      .sort((a, b) => b.currentValue - a.currentValue)
+                      .slice(0, 3)
+                      .map((asset, index) => (
+                        <div key={asset.id} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full ${asset.logoColor} flex items-center justify-center text-white font-bold text-sm`}>
+                              {asset.name.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-medium">{asset.name}</div>
+                              <div className="text-sm text-gray-400">{asset.symbol}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium text-green-400">
+                              {formatCurrency(asset.currentValue)}
+                            </div>
+                            <div className="text-sm text-gray-400">{asset.allocation.toFixed(1)}%</div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <TrendingUp className="h-8 w-8 mx-auto mb-2" />
+                    <p>No assets to display</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -720,110 +882,197 @@ function PortfolioPageContent() {
             <Card className="bg-gray-800/50 border-gray-700/50">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-medium">Recent Transactions</CardTitle>
+                  <CardTitle className="text-lg font-medium">Transaction History</CardTitle>
                   <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-gray-400 hover:text-white"
+                      onClick={refreshTransactions}
+                      disabled={transactionsLoading}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${transactionsLoading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
                     <Button variant="outline" size="sm" className="text-gray-400 hover:text-white">
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
-                    <Button variant="outline" size="sm" className="text-gray-400 hover:text-white">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
                   </div>
                 </div>
+                {transactionsError && (
+                  <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-red-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Error loading transactions: {transactionsError}</span>
+                    </div>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-gray-800/50 border-gray-700/50">
-                      <TableHead className="text-gray-400">Type</TableHead>
-                      <TableHead className="text-gray-400">Asset</TableHead>
-                      <TableHead className="text-gray-400">Amount</TableHead>
-                      <TableHead className="text-gray-400">Price</TableHead>
-                      <TableHead className="text-gray-400">Value</TableHead>
-                      <TableHead className="text-gray-400">Fee</TableHead>
-                      <TableHead className="text-gray-400">Date & Time</TableHead>
-                      <TableHead className="text-gray-400">Status</TableHead>
-                      <TableHead className="text-gray-400">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentTransactions.map((transaction) => (
-                      <TableRow 
-                        key={transaction.id} 
-                        className="hover:bg-gray-800/50 border-gray-700/50 cursor-pointer"
-                        onClick={() => {
-                          setSelectedTransaction(transaction);
-                          setShowTransactionModal(true);
-                        }}
-                      >
-                        <TableCell>
-                          <Badge 
-                            className={transaction.type === "buy" 
-                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border-transparent" 
-                              : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-transparent"
-                            }
-                          >
-                            {transaction.type === "buy" ? "Buy" : "Sell"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-xs`}>
-                              {transaction.asset.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="font-medium">{transaction.asset}</div>
-                              <div className="text-xs text-gray-400">{transaction.symbol}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{transaction.amount} {transaction.symbol}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>${transaction.price.toLocaleString()}</TableCell>
-                        <TableCell>{transaction.value}</TableCell>
-                        <TableCell className="text-gray-400">{transaction.fee}</TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="text-sm">{transaction.date}</div>
-                            <div className="text-xs text-gray-400">{transaction.time}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {transaction.status === "completed" ? (
-                            <div className="flex items-center">
-                              <Check className="h-4 w-4 text-green-400 mr-1" />
-                              <span>Completed</span>
-                            </div>
+                {transactionsLoading && realTransactions.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading transactions...</p>
+                  </div>
+                ) : realTransactions.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400">No transactions found</p>
+                    <p className="text-sm text-gray-500 mt-1">Your transaction history will appear here</p>
+                  </div>
+                ) : (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-gray-800/50 border-gray-700/50">
+                          <TableHead className="text-gray-400">Type</TableHead>
+                          <TableHead className="text-gray-400">Hash</TableHead>
+                          <TableHead className="text-gray-400">Amount</TableHead>
+                          <TableHead className="text-gray-400">Gas Fee</TableHead>
+                          <TableHead className="text-gray-400">Block</TableHead>
+                          <TableHead className="text-gray-400">Date & Time</TableHead>
+                          <TableHead className="text-gray-400">Status</TableHead>
+                          <TableHead className="text-gray-400">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {realTransactions.map((transaction) => {
+                          const txType = getTransactionType(transaction, address || '');
+                          const timestamp = formatTimestamp(transaction.timestamp);
+                          const gasFee = formatGasFee(transaction.gas_used, transaction.gas_price);
+                          const value = formatTransactionValue(transaction.value);
+                          const methodName = getTransactionMethodName(transaction);
+                          const primaryTokenTransfer = getPrimaryTokenTransfer(transaction);
+                          
+                          return (
+                            <TableRow 
+                              key={transaction.hash} 
+                              className="hover:bg-gray-800/50 border-gray-700/50 cursor-pointer"
+                              onClick={() => {
+                                setSelectedTransaction(transaction);
+                                setShowTransactionModal(true);
+                              }}
+                            >
+                              <TableCell>
+                                <Badge 
+                                  className={txType === "receive" 
+                                    ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border-transparent" 
+                                    : txType === "send"
+                                    ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-transparent"
+                                    : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border-transparent"
+                                  }
+                                >
+                                  {txType === "receive" ? "Receive" : txType === "send" ? "Send" : "Unknown"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="max-w-[120px]">
+                                  <div className="font-mono text-xs text-gray-300 truncate">
+                                    {transaction.hash}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {methodName}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  {primaryTokenTransfer ? (
+                                    <>
+                                      <div className="font-medium">
+                                        {formatTransactionValue(primaryTokenTransfer.total.value, parseInt(primaryTokenTransfer.total.decimals))} {primaryTokenTransfer.token.symbol}
+                                      </div>
+                                      <div className="text-xs text-gray-400">
+                                        {primaryTokenTransfer.token.name}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="font-medium">{value} LSK</div>
+                                      <div className="text-xs text-gray-400">
+                                        {txType === "send" ? `To: ${getAddressDisplayName(transaction.to)}` : 
+                                         txType === "receive" ? `From: ${getAddressDisplayName(transaction.from)}` : 
+                                         'Unknown'}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{gasFee} LSK</div>
+                                  <div className="text-xs text-gray-400">
+                                    Gas: {transaction.gas_used}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm font-mono">
+                                  {transaction.block_number.toLocaleString()}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="text-sm">{timestamp.date}</div>
+                                  <div className="text-xs text-gray-400">{timestamp.relative}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {transaction.status === "ok" ? (
+                                  <div className="flex items-center">
+                                    <Check className="h-4 w-4 text-green-400 mr-1" />
+                                    <span className="text-green-400">Success</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center">
+                                    <X className="h-4 w-4 text-red-400 mr-1" />
+                                    <span className="text-red-400">Failed</span>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-gray-400 hover:text-white"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTransaction(transaction);
+                                    setShowTransactionModal(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                    
+                    {/* Load More Button */}
+                    {hasMoreTransactions && (
+                      <div className="p-4 border-t border-gray-700/50">
+                        <Button 
+                          variant="outline" 
+                          className="w-full border-gray-700 text-gray-300 hover:text-white"
+                          onClick={loadMoreTransactions}
+                          disabled={transactionsLoading}
+                        >
+                          {transactionsLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                              Loading...
+                            </>
                           ) : (
-                            <div className="flex items-center">
-                              <Clock className="h-4 w-4 text-amber-400 mr-1" />
-                              <span>Pending</span>
-                            </div>
+                            'Load More Transactions'
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-gray-400 hover:text-white"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTransaction(transaction);
-                              setShowTransactionModal(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -851,20 +1100,23 @@ function PortfolioPageContent() {
                 <div className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-lg`}>
-                      {selectedTransaction.asset.charAt(0)}
+                      {getTransactionMethodName(selectedTransaction).charAt(0)}
                     </div>
                     <div>
-                      <div className="text-lg font-medium">{selectedTransaction.asset}</div>
-                      <div className="text-sm text-gray-400">{selectedTransaction.symbol}</div>
+                      <div className="text-lg font-medium">{getTransactionMethodName(selectedTransaction)}</div>
+                      <div className="text-sm text-gray-400">Transaction</div>
                     </div>
                   </div>
                   <Badge 
-                    className={selectedTransaction.type === "buy" 
+                    className={getTransactionType(selectedTransaction, address || '') === "receive" 
                       ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border-transparent text-lg px-4 py-2" 
-                      : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-transparent text-lg px-4 py-2"
+                      : getTransactionType(selectedTransaction, address || '') === "send"
+                      ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-transparent text-lg px-4 py-2"
+                      : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border-transparent text-lg px-4 py-2"
                     }
                   >
-                    {selectedTransaction.type === "buy" ? "Buy" : "Sell"}
+                    {getTransactionType(selectedTransaction, address || '') === "receive" ? "Receive" : 
+                     getTransactionType(selectedTransaction, address || '') === "send" ? "Send" : "Unknown"}
                   </Badge>
                 </div>
 
@@ -873,59 +1125,123 @@ function PortfolioPageContent() {
                   <div className="space-y-4">
                     <div className="p-3 bg-gray-700/30 rounded-lg">
                       <div className="text-sm text-gray-400">Amount</div>
-                      <div className="text-lg font-medium">{selectedTransaction.amount} {selectedTransaction.symbol}</div>
-                    </div>
-                    
-                    <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Price per {selectedTransaction.symbol}</div>
-                      <div className="text-lg font-medium">${selectedTransaction.price.toLocaleString()}</div>
-                    </div>
-                    
-                    <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Total Value</div>
-                      <div className="text-lg font-medium">{selectedTransaction.value}</div>
-                    </div>
-                    
-                    <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Transaction Fee</div>
-                      <div className="text-lg font-medium">{selectedTransaction.fee}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Date</div>
-                      <div className="text-lg font-medium">{selectedTransaction.date}</div>
-                    </div>
-                    
-                    <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Time</div>
-                      <div className="text-lg font-medium">{selectedTransaction.time}</div>
-                    </div>
-                    
-                    <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Status</div>
-                      <div className="flex items-center">
-                        {selectedTransaction.status === "completed" ? (
+                      <div className="text-lg font-medium">
+                        {getPrimaryTokenTransfer(selectedTransaction) ? (
                           <>
-                            <Check className="h-4 w-4 text-green-400 mr-2" />
-                            <span className="text-green-400 font-medium">Completed</span>
+                            {formatTransactionValue(
+                              getPrimaryTokenTransfer(selectedTransaction)!.total.value, 
+                              parseInt(getPrimaryTokenTransfer(selectedTransaction)!.total.decimals)
+                            )} {getPrimaryTokenTransfer(selectedTransaction)!.token.symbol}
                           </>
                         ) : (
                           <>
-                            <Clock className="h-4 w-4 text-amber-400 mr-2" />
-                            <span className="text-amber-400 font-medium">Pending</span>
+                            {formatTransactionValue(selectedTransaction.value)} LSK
                           </>
                         )}
                       </div>
                     </div>
                     
                     <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Network</div>
-                      <div className="text-lg font-medium">{selectedTransaction.network}</div>
+                      <div className="text-sm text-gray-400">Gas Fee</div>
+                      <div className="text-lg font-medium">{formatGasFee(selectedTransaction.gas_used, selectedTransaction.gas_price)} LSK</div>
+                    </div>
+                    
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">Gas Used</div>
+                      <div className="text-lg font-medium">{selectedTransaction.gas_used}</div>
+                    </div>
+                    
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">Gas Price</div>
+                      <div className="text-lg font-medium">{selectedTransaction.gas_price} wei</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">Date</div>
+                      <div className="text-lg font-medium">{formatTimestamp(selectedTransaction.timestamp).date}</div>
+                    </div>
+                    
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">Time</div>
+                      <div className="text-lg font-medium">{formatTimestamp(selectedTransaction.timestamp).time}</div>
+                    </div>
+                    
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">Status</div>
+                      <div className="flex items-center">
+                        {selectedTransaction.status === "ok" ? (
+                          <>
+                            <Check className="h-4 w-4 text-green-400 mr-2" />
+                            <span className="text-green-400 font-medium">Success</span>
+                          </>
+                        ) : (
+                          <>
+                            <X className="h-4 w-4 text-red-400 mr-2" />
+                            <span className="text-red-400 font-medium">Failed</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">Block Number</div>
+                      <div className="text-lg font-medium">{selectedTransaction.block_number.toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
+
+                {/* Address Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Address Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">From</div>
+                      <div className="text-sm font-mono text-gray-300 break-all">
+                        {getAddressDisplayName(selectedTransaction.from)}
+                      </div>
+                      {selectedTransaction.from.is_contract && (
+                        <div className="text-xs text-blue-400 mt-1">Contract</div>
+                      )}
+                    </div>
+                    
+                    <div className="p-3 bg-gray-700/30 rounded-lg">
+                      <div className="text-sm text-gray-400">To</div>
+                      <div className="text-sm font-mono text-gray-300 break-all">
+                        {getAddressDisplayName(selectedTransaction.to)}
+                      </div>
+                      {selectedTransaction.to.is_contract && (
+                        <div className="text-xs text-blue-400 mt-1">Contract</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Token Transfers */}
+                {hasTokenTransfers(selectedTransaction) && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Token Transfers</h3>
+                    <div className="space-y-3">
+                      {selectedTransaction.token_transfers!.map((transfer, index) => (
+                        <div key={index} className="p-3 bg-gray-700/30 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">{transfer.token.name} ({transfer.token.symbol})</div>
+                              <div className="text-sm text-gray-400">
+                                {formatTransactionValue(transfer.total.value, parseInt(transfer.total.decimals))} {transfer.token.symbol}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-400">From: {getAddressDisplayName(transfer.from)}</div>
+                              <div className="text-sm text-gray-400">To: {getAddressDisplayName(transfer.to)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Blockchain Information */}
                 <div className="space-y-4">
@@ -934,13 +1250,13 @@ function PortfolioPageContent() {
                     <div className="p-3 bg-gray-700/30 rounded-lg">
                       <div className="text-sm text-gray-400">Transaction Hash</div>
                       <div className="text-sm font-mono text-gray-300 break-all">
-                        {selectedTransaction.txHash}
+                        {selectedTransaction.hash}
                       </div>
                     </div>
                     
                     <div className="p-3 bg-gray-700/30 rounded-lg">
-                      <div className="text-sm text-gray-400">Block Number</div>
-                      <div className="text-lg font-medium">{selectedTransaction.blockNumber.toLocaleString()}</div>
+                      <div className="text-sm text-gray-400">Nonce</div>
+                      <div className="text-lg font-medium">{selectedTransaction.nonce}</div>
                     </div>
                   </div>
                 </div>
@@ -952,7 +1268,7 @@ function PortfolioPageContent() {
                     className="flex-1"
                     onClick={() => {
                       // Copy transaction hash to clipboard
-                      navigator.clipboard.writeText(selectedTransaction.txHash);
+                      navigator.clipboard.writeText(selectedTransaction.hash);
                     }}
                   >
                     <Download className="h-4 w-4 mr-2" />
@@ -962,8 +1278,8 @@ function PortfolioPageContent() {
                     variant="outline" 
                     className="flex-1"
                     onClick={() => {
-                      // Open in blockchain explorer
-                      window.open(`https://blockchain.info/tx/${selectedTransaction.txHash}`, '_blank');
+                      // Open in Lisk Sepolia explorer
+                      window.open(`https://sepolia-blockscout.lisk.com/tx/${selectedTransaction.hash}`, '_blank');
                     }}
                   >
                     <Eye className="h-4 w-4 mr-2" />
