@@ -6,13 +6,19 @@ import {
   useAccount,
   useWriteContract,
   useWaitForTransactionReceipt,
-  useReadContract,
+  useConfig,
 } from "wagmi";
+import { readContract } from "wagmi/actions";
 import deployments from "@/contracts/deployments/sepolia.json";
-import USDT_ABI from '@/contracts/abis/USDT.json';
-import PURCHASE_MANAGER_ABI from '@/contracts/abis/PurchaseManager.json';
-import ASSET_TOKEN_ABI from '@/contracts/abis/AssetToken.json';
-import { AssetTradeParams, TradeEstimation, UseAssetTradingReturn } from "@/types";
+import USDT_ABI from "@/contracts/abis/USDT.json";
+import PURCHASE_MANAGER_ABI from "@/contracts/abis/PurchaseManager.json";
+import ASSET_TOKEN_ABI from "@/contracts/abis/AssetToken.json";
+import {
+    AssetSaleParams,
+  AssetTradeParams,
+  TradeEstimation,
+  UseAssetTradingReturn,
+} from "@/types";
 
 const USDT_ADDRESS = deployments.USDT as Address;
 
@@ -24,7 +30,32 @@ export const useBuyAssetTokens = (
   assetTokenAddress?: Address
 ): UseAssetTradingReturn => {
   const { address } = useAccount();
+  const config = useConfig();
   const [isTransactionPending, setIsTransactionPending] = useState(false);
+
+  // State for manually managed contract data
+  const [usdtBalance, setUsdtBalance] = useState<bigint | undefined>();
+  const [usdtDecimals, setUsdtDecimals] = useState<number | undefined>();
+  const [usdtAllowance, setUsdtAllowance] = useState<bigint | undefined>();
+  const [assetTokenBalance, setAssetTokenBalance] = useState<
+    bigint | undefined
+  >();
+  const [assetTokenDecimals, setAssetTokenDecimals] = useState<
+    number | undefined
+  >();
+  const [assetTokenName, setAssetTokenName] = useState<string | undefined>();
+  const [assetTokenSymbol, setAssetTokenSymbol] = useState<
+    string | undefined
+  >();
+  const [assetTokenPriceData, setAssetTokenPriceData] = useState<
+    [bigint, bigint] | undefined
+  >();
+  const [assetInfoData, setAssetInfoData] = useState<any>();
+  const [isAssetSupported, setIsAssetSupported] = useState<
+    boolean | undefined
+  >();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   // Write contract hook
   const {
@@ -43,82 +74,156 @@ export const useBuyAssetTokens = (
     hash,
   });
 
-  // Read USDT data
-  const { data: usdtBalance, refetch: refetchUSDTBalance } = useReadContract({
-    address: USDT_ADDRESS,
-    abi: USDT_ABI,
-    functionName: "balanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!address },
-  });
+  // Function to read all contract data
+  const fetchContractData = useCallback(async () => {
+    if (!address || !config) return;
 
-  const { data: usdtDecimals } = useReadContract({
-    address: USDT_ADDRESS,
-    abi: USDT_ABI,
-    functionName: "decimals",
-  });
+    setLoading(true);
+    setError(null);
 
-  const { data: usdtAllowance, refetch: refetchUSDTAllowance } =
-    useReadContract({
-      address: USDT_ADDRESS,
-      abi: USDT_ABI,
-      functionName: "allowance",
-      args: address ? [address, USDT_ADDRESS] : undefined,
-      query: { enabled: !!address },
-    });
+    try {
+      // Read USDT data
+      const [usdtBalanceResult, usdtDecimalsResult, usdtAllowanceResult] =
+        await Promise.all([
+          readContract(config, {
+            address: USDT_ADDRESS,
+            abi: USDT_ABI,
+            functionName: "balanceOf",
+            args: [address],
+          }),
+          readContract(config, {
+            address: USDT_ADDRESS,
+            abi: USDT_ABI,
+            functionName: "decimals",
+          }),
+          readContract(config, {
+            address: USDT_ADDRESS,
+            abi: USDT_ABI,
+            functionName: "allowance",
+            args: [address, USDT_ADDRESS],
+          }),
+        ]);
 
-  // Read asset token data
-  const { data: assetTokenBalance, refetch: refetchAssetBalance } =
-    useReadContract({
-      address: assetTokenAddress,
-      abi: ASSET_TOKEN_ABI,
-      functionName: "balanceOf",
-      args: address ? [address] : undefined,
-      query: { enabled: !!address && !!assetTokenAddress },
-    });
+      setUsdtBalance(usdtBalanceResult as bigint);
+      setUsdtDecimals(usdtDecimalsResult as number);
+      setUsdtAllowance(usdtAllowanceResult as bigint);
 
-  const { data: assetTokenDecimals } = useReadContract({
-    address: assetTokenAddress,
-    abi: ASSET_TOKEN_ABI,
-    functionName: "decimals",
-    query: { enabled: !!assetTokenAddress },
-  });
+      // Read asset token data if address is provided
+      if (assetTokenAddress) {
+        const [
+          assetTokenBalanceResult,
+          assetTokenDecimalsResult,
+          assetTokenNameResult,
+          assetTokenSymbolResult,
+          assetTokenPriceResult,
+          assetInfoResult,
+          isAssetSupportedResult,
+        ] = await Promise.all([
+          readContract(config, {
+            address: assetTokenAddress,
+            abi: ASSET_TOKEN_ABI,
+            functionName: "balanceOf",
+            args: [address],
+          }),
+          readContract(config, {
+            address: assetTokenAddress,
+            abi: ASSET_TOKEN_ABI,
+            functionName: "decimals",
+          }),
+          readContract(config, {
+            address: assetTokenAddress,
+            abi: ASSET_TOKEN_ABI,
+            functionName: "name",
+          }),
+          readContract(config, {
+            address: assetTokenAddress,
+            abi: ASSET_TOKEN_ABI,
+            functionName: "symbol",
+          }),
+          readContract(config, {
+            address: assetTokenAddress,
+            abi: ASSET_TOKEN_ABI,
+            functionName: "getCurrentPrice",
+          }),
+          readContract(config, {
+            address: assetTokenAddress,
+            abi: ASSET_TOKEN_ABI,
+            functionName: "assetInfo",
+          }),
+          readContract(config, {
+            address: USDT_ADDRESS,
+            abi: PURCHASE_MANAGER_ABI,
+            functionName: "supportedAssetTokens",
+            args: [assetTokenAddress],
+          }),
+        ]);
 
-  const { data: assetTokenName } = useReadContract({
-    address: assetTokenAddress,
-    abi: ASSET_TOKEN_ABI,
-    functionName: "name",
-    query: { enabled: !!assetTokenAddress },
-  });
+        setAssetTokenBalance(assetTokenBalanceResult as bigint);
+        setAssetTokenDecimals(assetTokenDecimalsResult as number);
+        setAssetTokenName(assetTokenNameResult as string);
+        setAssetTokenSymbol(assetTokenSymbolResult as string);
+        setAssetTokenPriceData(assetTokenPriceResult as [bigint, bigint]);
+        setAssetInfoData(assetInfoResult);
+        setIsAssetSupported(isAssetSupportedResult as boolean);
+      }
+    } catch (err) {
+      setError(err as Error);
+      console.error("Error fetching contract data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [address, assetTokenAddress, config]);
 
-  const { data: assetTokenSymbol } = useReadContract({
-    address: assetTokenAddress,
-    abi: ASSET_TOKEN_ABI,
-    functionName: "symbol",
-    query: { enabled: !!assetTokenAddress },
-  });
+  // Fetch data on mount and when dependencies change
+  useEffect(() => {
+    fetchContractData();
+  }, [fetchContractData]);
 
-  const { data: assetTokenPriceData } = useReadContract({
-    address: assetTokenAddress,
-    abi: ASSET_TOKEN_ABI,
-    functionName: "getCurrentPrice",
-    query: { enabled: !!assetTokenAddress },
-  });
+  // Refetch functions
+  const refetchUSDTBalance = useCallback(async () => {
+    if (!address || !config) return;
+    try {
+      const balance = await readContract(config, {
+        address: USDT_ADDRESS,
+        abi: USDT_ABI,
+        functionName: "balanceOf",
+        args: [address],
+      });
+      setUsdtBalance(balance as bigint);
+    } catch (err) {
+      console.error("Error refetching USDT balance:", err);
+    }
+  }, [address, config]);
 
-  const { data: assetInfoData } = useReadContract({
-    address: assetTokenAddress,
-    abi: ASSET_TOKEN_ABI,
-    functionName: "assetInfo",
-    query: { enabled: !!assetTokenAddress },
-  });
+  const refetchUSDTAllowance = useCallback(async () => {
+    if (!address || !config) return;
+    try {
+      const allowance = await readContract(config, {
+        address: USDT_ADDRESS,
+        abi: USDT_ABI,
+        functionName: "allowance",
+        args: [address, USDT_ADDRESS],
+      });
+      setUsdtAllowance(allowance as bigint);
+    } catch (err) {
+      console.error("Error refetching USDT allowance:", err);
+    }
+  }, [address, config]);
 
-  const { data: isAssetSupported } = useReadContract({
-    address: USDT_ADDRESS,
-    abi: PURCHASE_MANAGER_ABI,
-    functionName: "supportedAssetTokens",
-    args: assetTokenAddress ? [assetTokenAddress] : undefined,
-    query: { enabled: !!assetTokenAddress },
-  });
+  const refetchAssetBalance = useCallback(async () => {
+    if (!address || !config || !assetTokenAddress) return;
+    try {
+      const balance = await readContract(config, {
+        address: assetTokenAddress,
+        abi: ASSET_TOKEN_ABI,
+        functionName: "balanceOf",
+        args: [address],
+      });
+      setAssetTokenBalance(balance as bigint);
+    } catch (err) {
+      console.error("Error refetching asset balance:", err);
+    }
+  }, [address, config, assetTokenAddress]);
 
   // Format balance data
   const formattedUSDTBalance = useMemo(() => {
@@ -138,7 +243,7 @@ export const useBuyAssetTokens = (
 
   const formattedAssetPrice = useMemo(() => {
     if (!assetTokenPriceData) return "0";
-    const [priceRaw] = assetTokenPriceData as [bigint, bigint];
+    const [priceRaw] = assetTokenPriceData;
     return formatUnits(priceRaw, 8); // Asset prices have 8 decimals
   }, [assetTokenPriceData]);
 
@@ -203,69 +308,79 @@ export const useBuyAssetTokens = (
 
   // Estimation functions
   const estimateBuyTokens = useCallback(
-    (usdAmount: string): TradeEstimation => {
-      if (
-        !usdAmount ||
-        !formattedAssetPrice ||
-        parseFloat(formattedAssetPrice) === 0
-      ) {
+    (paymentAmount: string): TradeEstimation => {
+      if (!formattedAssetPrice || !assetTokenDecimals) {
         return {
           estimatedTokens: "0",
-          estimatedValue: "0",
+          estimatedValue: paymentAmount,
           fee: "0",
-          netAmount: "0",
+          netAmount: paymentAmount,
         };
       }
 
-      const amount = parseFloat(usdAmount);
-      const price = parseFloat(formattedAssetPrice);
+      try {
+        const price = parseFloat(formattedAssetPrice);
+        const payment = parseFloat(paymentAmount);
+        const estimatedTokens = payment / price;
 
-      // Estimate fee (typically 0.1% for asset purchases - this should be read from contract)
-      const feePercentage = 0.001; // 0.1%
-      const fee = amount * feePercentage;
-      const netAmount = amount - fee;
-      const estimatedTokens = netAmount / price;
+        // Calculate fee (assuming 0.5% fee, adjust as needed)
+        const feePercentage = 0.005;
+        const fee = payment * feePercentage;
+        const netAmount = payment - fee;
 
-      return {
-        estimatedTokens: estimatedTokens.toFixed(6),
-        estimatedValue: netAmount.toFixed(2),
-        fee: fee.toFixed(2),
-        netAmount: netAmount.toFixed(2),
-      };
+        return {
+          estimatedTokens: estimatedTokens.toFixed(assetTokenDecimals),
+          estimatedValue: paymentAmount,
+          fee: fee.toFixed(6),
+          netAmount: netAmount.toFixed(6),
+        };
+      } catch {
+        return {
+          estimatedTokens: "0",
+          estimatedValue: paymentAmount,
+          fee: "0",
+          netAmount: paymentAmount,
+        };
+      }
     },
-    [formattedAssetPrice]
+    [formattedAssetPrice, assetTokenDecimals]
   );
 
   const estimateSellValue = useCallback(
     (tokenAmount: string): TradeEstimation => {
-      if (
-        !tokenAmount ||
-        !formattedAssetPrice ||
-        parseFloat(formattedAssetPrice) === 0
-      ) {
+      if (!formattedAssetPrice) {
         return {
-          estimatedTokens: "0",
+          estimatedTokens: tokenAmount,
           estimatedValue: "0",
           fee: "0",
           netAmount: "0",
         };
       }
 
-      const tokens = parseFloat(tokenAmount);
-      const price = parseFloat(formattedAssetPrice);
-      const grossValue = tokens * price;
+      try {
+        const price = parseFloat(formattedAssetPrice);
+        const tokens = parseFloat(tokenAmount);
+        const estimatedValue = tokens * price;
 
-      // Estimate fee (typically 0.1% for asset sales)
-      const feePercentage = 0.001; // 0.1%
-      const fee = grossValue * feePercentage;
-      const netAmount = grossValue - fee;
+        // Calculate fee (assuming 0.5% fee, adjust as needed)
+        const feePercentage = 0.005;
+        const fee = estimatedValue * feePercentage;
+        const netAmount = estimatedValue - fee;
 
-      return {
-        estimatedTokens: tokenAmount,
-        estimatedValue: grossValue.toFixed(2),
-        fee: fee.toFixed(2),
-        netAmount: netAmount.toFixed(2),
-      };
+        return {
+          estimatedTokens: tokenAmount,
+          estimatedValue: estimatedValue.toFixed(6), // USDT has 6 decimals typically
+          fee: fee.toFixed(6),
+          netAmount: netAmount.toFixed(6),
+        };
+      } catch {
+        return {
+          estimatedTokens: tokenAmount,
+          estimatedValue: "0",
+          fee: "0",
+          netAmount: "0",
+        };
+      }
     },
     [formattedAssetPrice]
   );
@@ -283,7 +398,7 @@ export const useBuyAssetTokens = (
           address: USDT_ADDRESS,
           abi: USDT_ABI,
           functionName: "approve",
-          args: [USDT_ADDRESS],
+          args: [USDT_ADDRESS, amountBigInt],
         });
       } catch (error) {
         setIsTransactionPending(false);
@@ -311,11 +426,7 @@ export const useBuyAssetTokens = (
           address: USDT_ADDRESS,
           abi: PURCHASE_MANAGER_ABI,
           functionName: "purchaseAssetToken",
-          args: [
-            USDT_ADDRESS,
-            params.assetTokenAddress,
-            amountBigInt,
-          ],
+          args: [USDT_ADDRESS, params.assetTokenAddress, amountBigInt],
         });
       } catch (error) {
         setIsTransactionPending(false);
@@ -338,24 +449,20 @@ export const useBuyAssetTokens = (
         throw new Error("Asset token decimals not loaded");
       if (!params.assetTokenAddress)
         throw new Error("Asset token address required");
-      if (!hasEnoughAssetTokens(params.tokenAmount))
+      if (!hasEnoughAssetTokens(params.tokenAmount || "0"))
         throw new Error("Insufficient asset tokens");
 
       setIsTransactionPending(true);
       try {
         const tokenAmountBigInt = parseUnits(
-          params.tokenAmount,
+          params.tokenAmount || "0",
           assetTokenDecimals
         );
         await writeContract({
           address: USDT_ADDRESS,
           abi: PURCHASE_MANAGER_ABI,
           functionName: "sellAssetToken",
-          args: [
-            params.assetTokenAddress,
-            USDT_ADDRESS,
-            tokenAmountBigInt,
-          ],
+          args: [params.assetTokenAddress, USDT_ADDRESS, tokenAmountBigInt],
         });
       } catch (error) {
         setIsTransactionPending(false);
@@ -390,6 +497,10 @@ export const useBuyAssetTokens = (
   }, [isConfirmed, handleTransactionComplete]);
 
   return {
+    // Loading and error states
+    loading,
+    error: error || writeError || receiptError,
+
     // Balance and allowance data
     usdtBalance: formattedUSDTBalance,
     usdtBalanceRaw: usdtBalance,
@@ -409,7 +520,6 @@ export const useBuyAssetTokens = (
       isTransactionPending || isWritePending || isConfirming,
     isConfirmed,
     transactionHash: hash,
-    error: writeError || receiptError,
 
     // Validation functions
     hasEnoughUSDTBalance,
@@ -428,7 +538,7 @@ export const useBuyAssetTokens = (
 
     // Utility functions
     refreshBalances,
-    resetTransaction,
+    resetTransaction
   };
 };
 
