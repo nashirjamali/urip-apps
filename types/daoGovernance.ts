@@ -10,9 +10,32 @@ export enum ProposalStatus {
   EXPIRED = 6,
 }
 
+export enum VoteType {
+  AGAINST = 0,
+  FOR = 1,
+  ABSTAIN = 2,
+}
+
 // ============================================================================
 // DAO GOVERNANCE INTERFACES
 // ============================================================================
+
+// Simple proposal interface for reading
+export interface DAOProposal {
+  id: number;
+  title: string;
+  description: string;
+  proposer: Address;
+  startTime: number;
+  endTime: number;
+  executionTime: number;
+  assetTokens: Address[];
+  newAllocations: number[];
+  forVotes: bigint;
+  againstVotes: bigint;
+  totalVotingPower: bigint;
+  status: ProposalStatus;
+}
 
 // List item for proposals (simplified view)
 export interface DAOProposalListItem {
@@ -56,6 +79,16 @@ export interface DAOProposalDetail {
   voters: VoterInfo[];
 }
 
+// Vote status interface
+export interface VoteStatus {
+  hasVoted: boolean;
+  voteChoice: boolean; // true for support, false for against
+}
+
+// ============================================================================
+// HOOK RETURN INTERFACES
+// ============================================================================
+
 export interface UseDAOProposalsReturn {
   // Proposal data
   activeProposals: DAOProposalListItem[];
@@ -95,4 +128,79 @@ export interface UseDAOProposalDetailReturn {
 
   // Refresh function
   refetch: () => void;
+}
+
+export interface UseDAOVotingReturn {
+  // User voting data
+  votingPower: string;
+  votingPowerRaw: bigint | undefined;
+
+  // Transaction states
+  isVoting: boolean;
+  isConfirming: boolean;
+  isConfirmed: boolean;
+
+  // Error states
+  error: Error | null;
+
+  // Actions
+  castVote: (
+    proposalId: number,
+    support: boolean,
+    reason: string
+  ) => Promise<void>;
+
+  // Queries
+  getVoteStatus: (
+    proposalId: number,
+    voter?: Address
+  ) => Promise<VoteStatus | null>;
+  hasVoted: (proposalId: number, voter?: Address) => Promise<boolean>;
+
+  // Utils
+  refreshVotingPower: () => void;
+  resetTransaction: () => void;
+}
+
+export interface UseDAOGovernanceReturn {
+  // Proposal data
+  proposals: DAOProposal[];
+  proposalCount: number;
+
+  // User data
+  votingPower: string;
+  votingPowerRaw: bigint | undefined;
+
+  // Loading states
+  isLoading: boolean;
+  isVoting: boolean;
+  isConfirming: boolean;
+  isConfirmed: boolean;
+
+  // Error states
+  error: Error | null;
+
+  // Actions
+  castVote: (
+    proposalId: number,
+    support: boolean,
+    reason: string
+  ) => Promise<void>;
+
+  // Queries
+  getProposal: (proposalId: number) => Promise<DAOProposal | null>;
+  getVoteStatus: (
+    proposalId: number,
+    voter?: Address
+  ) => Promise<VoteStatus | null>;
+  hasVoted: (proposalId: number, voter?: Address) => Promise<boolean>;
+  getActiveProposals: () => Promise<number[]>;
+  getCurrentAllocations: () => Promise<{
+    assetTokens: Address[];
+    allocations: number[];
+  } | null>;
+
+  // Utils
+  refreshAll: () => void;
+  resetTransaction: () => void;
 }
