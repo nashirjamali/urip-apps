@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useAccount } from "wagmi";
 import { readContract } from "@wagmi/core";
 import { Address } from "viem";
 import { config } from "@/config/xellarConfig";
