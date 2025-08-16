@@ -42,7 +42,7 @@ export interface UseAssetTradingReturn {
   isConfirmed: boolean;
   transactionHash: `0x${string}` | undefined;
   error: Error | null;
-  loading: boolean,
+  loading: boolean
 
   // Validation functions
   hasEnoughUSDTBalance: (amount: string) => boolean;

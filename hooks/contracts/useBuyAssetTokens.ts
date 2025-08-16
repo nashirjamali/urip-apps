@@ -13,14 +13,56 @@ import deployments from "@/contracts/deployments/sepolia.json";
 import USDT_ABI from "@/contracts/abis/USDT.json";
 import PURCHASE_MANAGER_ABI from "@/contracts/abis/PurchaseManager.json";
 import ASSET_TOKEN_ABI from "@/contracts/abis/AssetToken.json";
-import {
-    AssetSaleParams,
-  AssetTradeParams,
-  TradeEstimation,
-  UseAssetTradingReturn,
-} from "@/types";
+import { AssetTradeParams, TradeEstimation } from "@/types";
 
 const USDT_ADDRESS = deployments.USDT as Address;
+const PURCHASE_MANAGER_ADDRESS = deployments.PurchaseManager as Address;
+
+export interface UseBuyAssetTokensReturn {
+  // Loading and error states
+  loading: boolean;
+  error: Error | null;
+
+  // Balance and allowance data
+  usdtBalance: string;
+  usdtBalanceRaw?: bigint;
+  usdtAllowance: string;
+  usdtAllowanceRaw?: bigint;
+  usdtDecimals?: number;
+
+  // Asset token data
+  assetTokenBalance: string;
+  assetTokenBalanceRaw?: bigint;
+  assetTokenDecimals?: number;
+  assetTokenPrice: string;
+  assetTokenInfo: {
+    name: string;
+    symbol: string;
+    assetType: string;
+    isActive: boolean;
+  } | null;
+
+  // Transaction states
+  isTransactionPending: boolean;
+  isConfirmed: boolean;
+  transactionHash?: `0x${string}`;
+
+  // Validation functions
+  hasEnoughUSDTBalance: (amount: string) => boolean;
+  hasEnoughUSDTAllowance: (amount: string) => boolean;
+  isAssetTokenSupported: boolean;
+
+  // Estimation functions
+  estimateBuyTokens: (usdAmount: string) => Promise<TradeEstimation>;
+
+  // Transaction functions
+  approveUSDT: (amount: string) => Promise<void>;
+  buyAssetTokens: (params: AssetTradeParams) => Promise<void>;
+
+  // Utility functions
+  refreshBalances: () => void;
+  resetTransaction: () => void;
+}
 
 /**
  * Hook for buying asset tokens
@@ -28,7 +70,7 @@ const USDT_ADDRESS = deployments.USDT as Address;
  */
 export const useBuyAssetTokens = (
   assetTokenAddress?: Address
-): UseAssetTradingReturn => {
+): UseBuyAssetTokensReturn => {
   const { address } = useAccount();
   const config = useConfig();
   const [isTransactionPending, setIsTransactionPending] = useState(false);
@@ -100,7 +142,7 @@ export const useBuyAssetTokens = (
             address: USDT_ADDRESS,
             abi: USDT_ABI,
             functionName: "allowance",
-            args: [address, USDT_ADDRESS],
+            args: [address, PURCHASE_MANAGER_ADDRESS],
           }),
         ]);
 
@@ -148,12 +190,12 @@ export const useBuyAssetTokens = (
           readContract(config, {
             address: assetTokenAddress,
             abi: ASSET_TOKEN_ABI,
-            functionName: "assetInfo",
+            functionName: "getAssetInfo",
           }),
           readContract(config, {
-            address: USDT_ADDRESS,
+            address: PURCHASE_MANAGER_ADDRESS,
             abi: PURCHASE_MANAGER_ABI,
-            functionName: "supportedAssetTokens",
+            functionName: "isAssetTokenSupported",
             args: [assetTokenAddress],
           }),
         ]);
@@ -202,7 +244,7 @@ export const useBuyAssetTokens = (
         address: USDT_ADDRESS,
         abi: USDT_ABI,
         functionName: "allowance",
-        args: [address, USDT_ADDRESS],
+        args: [address, PURCHASE_MANAGER_ADDRESS],
       });
       setUsdtAllowance(allowance as bigint);
     } catch (err) {
@@ -293,103 +335,56 @@ export const useBuyAssetTokens = (
     [usdtAllowance, usdtDecimals]
   );
 
-  const hasEnoughAssetTokens = useCallback(
-    (amount: string): boolean => {
-      if (!assetTokenBalance || !assetTokenDecimals) return false;
-      try {
-        const amountBigInt = parseUnits(amount, assetTokenDecimals);
-        return assetTokenBalance >= amountBigInt;
-      } catch {
-        return false;
-      }
-    },
-    [assetTokenBalance, assetTokenDecimals]
-  );
-
   // Estimation functions
   const estimateBuyTokens = useCallback(
-    (paymentAmount: string): TradeEstimation => {
-      if (!formattedAssetPrice || !assetTokenDecimals) {
-        return {
-          estimatedTokens: "0",
-          estimatedValue: paymentAmount,
-          fee: "0",
-          netAmount: paymentAmount,
-        };
+    async (usdAmount: string): Promise<TradeEstimation> => {
+      if (!config || !assetTokenAddress || !usdtDecimals) {
+        throw new Error("Missing required data for estimation");
       }
 
       try {
-        const price = parseFloat(formattedAssetPrice);
-        const payment = parseFloat(paymentAmount);
-        const estimatedTokens = payment / price;
+        const usdAmountBigInt = parseUnits(usdAmount, usdtDecimals);
+        const tokenAmount = await readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "getTokenAmount",
+          args: [usdAmountBigInt],
+        });
 
-        // Calculate fee (assuming 0.5% fee, adjust as needed)
-        const feePercentage = 0.005;
-        const fee = payment * feePercentage;
-        const netAmount = payment - fee;
+        // Format the estimated tokens
+        const estimatedTokensFormatted = formatUnits(
+          tokenAmount as bigint,
+          assetTokenDecimals || 18
+        );
+
+        // Calculate fee (you may need to adjust this based on your contract's fee structure)
+        // This example assumes a 0.5% fee, but you should get this from your contract
+        const feePercentage = 0.005; // 0.5%
+        const feeAmount = (parseFloat(usdAmount) * feePercentage).toString();
+
+        // Net amount after fee
+        const netAmount = (
+          parseFloat(usdAmount) - parseFloat(feeAmount)
+        ).toString();
 
         return {
-          estimatedTokens: estimatedTokens.toFixed(assetTokenDecimals),
-          estimatedValue: paymentAmount,
-          fee: fee.toFixed(6),
-          netAmount: netAmount.toFixed(6),
+          estimatedTokens: estimatedTokensFormatted,
+          estimatedValue: usdAmount,
+          fee: feeAmount,
+          netAmount: netAmount,
         };
-      } catch {
-        return {
-          estimatedTokens: "0",
-          estimatedValue: paymentAmount,
-          fee: "0",
-          netAmount: paymentAmount,
-        };
+      } catch (error) {
+        console.error("Error estimating buy tokens:", error);
+        throw error;
       }
     },
-    [formattedAssetPrice, assetTokenDecimals]
-  );
-
-  const estimateSellValue = useCallback(
-    (tokenAmount: string): TradeEstimation => {
-      if (!formattedAssetPrice) {
-        return {
-          estimatedTokens: tokenAmount,
-          estimatedValue: "0",
-          fee: "0",
-          netAmount: "0",
-        };
-      }
-
-      try {
-        const price = parseFloat(formattedAssetPrice);
-        const tokens = parseFloat(tokenAmount);
-        const estimatedValue = tokens * price;
-
-        // Calculate fee (assuming 0.5% fee, adjust as needed)
-        const feePercentage = 0.005;
-        const fee = estimatedValue * feePercentage;
-        const netAmount = estimatedValue - fee;
-
-        return {
-          estimatedTokens: tokenAmount,
-          estimatedValue: estimatedValue.toFixed(6), // USDT has 6 decimals typically
-          fee: fee.toFixed(6),
-          netAmount: netAmount.toFixed(6),
-        };
-      } catch {
-        return {
-          estimatedTokens: tokenAmount,
-          estimatedValue: "0",
-          fee: "0",
-          netAmount: "0",
-        };
-      }
-    },
-    [formattedAssetPrice]
+    [config, assetTokenAddress, usdtDecimals, assetTokenDecimals]
   );
 
   // Transaction functions
   const approveUSDT = useCallback(
     async (amount: string) => {
-      if (!address) throw new Error("Wallet not connected");
-      if (!usdtDecimals) throw new Error("USDT decimals not loaded");
+      if (!address || !usdtDecimals) throw new Error("Missing required data");
 
       setIsTransactionPending(true);
       try {
@@ -398,7 +393,7 @@ export const useBuyAssetTokens = (
           address: USDT_ADDRESS,
           abi: USDT_ABI,
           functionName: "approve",
-          args: [USDT_ADDRESS, amountBigInt],
+          args: [PURCHASE_MANAGER_ADDRESS, amountBigInt],
         });
       } catch (error) {
         setIsTransactionPending(false);
@@ -410,23 +405,23 @@ export const useBuyAssetTokens = (
 
   const buyAssetTokens = useCallback(
     async (params: AssetTradeParams) => {
-      if (!address) throw new Error("Wallet not connected");
-      if (!usdtDecimals) throw new Error("USDT decimals not loaded");
-      if (!params.assetTokenAddress)
-        throw new Error("Asset token address required");
-      if (!hasEnoughUSDTBalance(params.paymentAmount))
+      if (!address || !usdtDecimals) throw new Error("Missing required data");
+      if (!hasEnoughUSDTBalance(params.paymentAmount || "0"))
         throw new Error("Insufficient USDT balance");
-      if (!hasEnoughUSDTAllowance(params.paymentAmount))
+      if (!hasEnoughUSDTAllowance(params.paymentAmount || "0"))
         throw new Error("Insufficient USDT allowance");
 
       setIsTransactionPending(true);
       try {
-        const amountBigInt = parseUnits(params.paymentAmount, usdtDecimals);
+        const usdAmountBigInt = parseUnits(
+          params.paymentAmount || "0",
+          usdtDecimals
+        );
         await writeContract({
-          address: USDT_ADDRESS,
+          address: PURCHASE_MANAGER_ADDRESS,
           abi: PURCHASE_MANAGER_ABI,
-          functionName: "purchaseAssetToken",
-          args: [USDT_ADDRESS, params.assetTokenAddress, amountBigInt],
+          functionName: "buyAssetToken",
+          args: [params.assetTokenAddress, USDT_ADDRESS, usdAmountBigInt],
         });
       } catch (error) {
         setIsTransactionPending(false);
@@ -440,36 +435,6 @@ export const useBuyAssetTokens = (
       hasEnoughUSDTBalance,
       hasEnoughUSDTAllowance,
     ]
-  );
-
-  const sellAssetTokens = useCallback(
-    async (params: AssetSaleParams) => {
-      if (!address) throw new Error("Wallet not connected");
-      if (!assetTokenDecimals)
-        throw new Error("Asset token decimals not loaded");
-      if (!params.assetTokenAddress)
-        throw new Error("Asset token address required");
-      if (!hasEnoughAssetTokens(params.tokenAmount || "0"))
-        throw new Error("Insufficient asset tokens");
-
-      setIsTransactionPending(true);
-      try {
-        const tokenAmountBigInt = parseUnits(
-          params.tokenAmount || "0",
-          assetTokenDecimals
-        );
-        await writeContract({
-          address: USDT_ADDRESS,
-          abi: PURCHASE_MANAGER_ABI,
-          functionName: "sellAssetToken",
-          args: [params.assetTokenAddress, USDT_ADDRESS, tokenAmountBigInt],
-        });
-      } catch (error) {
-        setIsTransactionPending(false);
-        throw error;
-      }
-    },
-    [address, assetTokenDecimals, writeContract, hasEnoughAssetTokens]
   );
 
   // Utility functions
@@ -524,41 +489,17 @@ export const useBuyAssetTokens = (
     // Validation functions
     hasEnoughUSDTBalance,
     hasEnoughUSDTAllowance,
-    hasEnoughAssetTokens,
     isAssetTokenSupported: !!isAssetSupported,
 
     // Estimation functions
     estimateBuyTokens,
-    estimateSellValue,
 
     // Transaction functions
     approveUSDT,
     buyAssetTokens,
-    sellAssetTokens,
 
     // Utility functions
     refreshBalances,
-    resetTransaction
+    resetTransaction,
   };
-};
-
-/**
- * Hook for selling asset tokens
- * Handles asset token sale transactions
- */
-export const useSellAssetTokens = (
-  assetTokenAddress?: Address
-): UseAssetTradingReturn => {
-  // This uses the same implementation as buy hook since both functions are included
-  return useBuyAssetTokens(assetTokenAddress);
-};
-
-/**
- * Hook for general asset trading (both buy and sell)
- * This is the main hook that provides all trading functionality
- */
-export const useAssetTrading = (
-  assetTokenAddress?: Address
-): UseAssetTradingReturn => {
-  return useBuyAssetTokens(assetTokenAddress);
 };
