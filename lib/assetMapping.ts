@@ -1,4 +1,4 @@
-import { AssetDetail, AssetNews } from "@/types/asset";
+import { AssetDetailItem, AssetNews } from "@/types";
 import {
   ASSET_ICONS,
   ASSET_DETAILS,
@@ -9,7 +9,7 @@ import {
 /**
  * Get asset icon URL for a given symbol
  */
-export function getAssetIcon(symbol: string, assetType: string): string {
+export function getAssetIcon(symbol: string, _assetType: string): string {
   if (ASSET_ICONS[symbol]) {
     return ASSET_ICONS[symbol];
   }
@@ -20,7 +20,7 @@ export function getAssetIcon(symbol: string, assetType: string): string {
 /**
  * Get detailed asset information
  */
-export function getAssetDetail(symbol: string): AssetDetail | null {
+export function getAssetDetail(symbol: string): AssetDetailItem | null {
   return ASSET_DETAILS[symbol] || null;
 }
 

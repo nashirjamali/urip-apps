@@ -26,6 +26,8 @@ export interface AssetDetailItem extends AssetListItem {
   industry: string;
   country: string;
   sharesOutstanding: string;
+  description?: string;
+  foundedYear?: number;
   latestNews: AssetNews[];
 }
 

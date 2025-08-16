@@ -1,11 +1,11 @@
-import { AssetDetail } from "@/types/asset";
+import { AssetDetailItem } from "@/types";
 
 export const ASSET_ICONS: Record<string, string> = {
   tAAPL: "/icons/assets/apple.svg",
   DEFAULT: "/icons/assets/default-asset.svg",
 };
 
-export const ASSET_DETAILS: Record<string, AssetDetail> = {
+export const ASSET_DETAILS: Record<string, AssetDetailItem> = {
   tAAPL: {
     companyName: "Apple Inc.",
     marketCap: "$3.5T",
@@ -16,7 +16,7 @@ export const ASSET_DETAILS: Record<string, AssetDetail> = {
     description:
       "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
     foundedYear: 1976,
-    employees: "164,000",
+
   },
   tNVDA: {
     companyName: "NVIDIA Corporation",
@@ -28,7 +28,6 @@ export const ASSET_DETAILS: Record<string, AssetDetail> = {
     description:
       "NVIDIA Corporation operates as a visual computing company specializing in graphics processing units and AI computing.",
     foundedYear: 1993,
-    employees: "29,600",
   },
 };
 
