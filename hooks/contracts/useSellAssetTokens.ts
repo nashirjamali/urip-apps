@@ -18,10 +18,12 @@ import { AssetSaleParams, TradeEstimation } from "@/types";
 const USDT_ADDRESS = deployments.USDT as Address;
 const PURCHASE_MANAGER_ADDRESS = deployments.PurchaseManager as Address;
 
+// Enhanced interface with all PurchaseManager functions for selling
 export interface UseSellAssetTokensReturn {
   // Loading and error states
   loading: boolean;
   error: Error | null;
+  refreshing: boolean;
 
   // Balance data
   usdtBalance: string;
@@ -40,6 +42,21 @@ export interface UseSellAssetTokensReturn {
     isActive: boolean;
   } | null;
 
+  // Trading limits and fees
+  tradingLimits?: {
+    minPurchaseAmount: bigint;
+    maxPurchaseAmount: bigint;
+    dailyLimit: bigint;
+    limitsEnabled: boolean;
+  };
+  fees?: {
+    purchaseFee: bigint;
+    redemptionFee: bigint;
+    uripPurchaseFee: bigint;
+    uripRedemptionFee: bigint;
+  };
+  dailyVolume?: bigint;
+
   // Transaction states
   isTransactionPending: boolean;
   isConfirmed: boolean;
@@ -48,21 +65,34 @@ export interface UseSellAssetTokensReturn {
   // Validation functions
   hasEnoughAssetTokens: (amount: string) => boolean;
   isAssetTokenSupported: boolean;
+  canApproveAssetTokens: boolean;
+  isSaleWithinLimits: (tokenAmount: string) => {
+    isValid: boolean;
+    reason?: string;
+  };
 
   // Estimation functions
   estimateSellValue: (tokenAmount: string) => Promise<TradeEstimation>;
+  calculateSaleFees: (tokenAmount: string) => {
+    fee: string;
+    netAmount: string;
+    usdValue: string;
+  };
 
   // Transaction functions
+  approveAssetTokens: (amount: string) => Promise<void>;
   sellAssetTokens: (params: AssetSaleParams) => Promise<void>;
 
   // Utility functions
   refreshBalances: () => void;
   resetTransaction: () => void;
+  getMaxSellAmount: () => string;
 }
 
 /**
- * Hook for selling asset tokens
- * Handles asset token sale transactions
+ * Enhanced hook for selling asset tokens
+ * Fully compatible with PurchaseManager.sellAssetToken contract function
+ * Includes comprehensive validation, fee calculation, and allowance management
  */
 export const useSellAssetTokens = (
   assetTokenAddress?: Address
@@ -71,8 +101,9 @@ export const useSellAssetTokens = (
   const config = useConfig();
   const [isTransactionPending, setIsTransactionPending] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // State for manually managed contract data
+  // Enhanced state management
   const [usdtBalance, setUsdtBalance] = useState<bigint | undefined>();
   const [usdtDecimals, setUsdtDecimals] = useState<number | undefined>();
   const [assetTokenBalance, setAssetTokenBalance] = useState<
@@ -92,10 +123,20 @@ export const useSellAssetTokens = (
   const [isAssetSupported, setIsAssetSupported] = useState<
     boolean | undefined
   >();
+  const [assetTokenAllowance, setAssetTokenAllowance] = useState<
+    bigint | undefined
+  >();
+
+  // New state for enhanced features
+  const [tradingLimits, setTradingLimits] = useState<any>();
+  const [fees, setFees] = useState<any>();
+  const [dailyVolume, setDailyVolume] = useState<bigint | undefined>();
+  const [isPaused, setIsPaused] = useState<boolean | undefined>();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Write contract hook
+  // Write contract hooks
   const {
     writeContract,
     data: hash,
@@ -117,16 +158,37 @@ export const useSellAssetTokens = (
     setIsMounted(true);
   }, []);
 
-  // Function to read all contract data
-  const fetchContractData = useCallback(async () => {
-    if (!address || !config || !isMounted || !isConnected) return;
+  // Enhanced data loading function
+  const loadContractData = useCallback(async () => {
+    if (!isConnected || !address || !assetTokenAddress || !config) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Read USDT data
-      const [usdtBalanceResult, usdtDecimalsResult] = await Promise.all([
+      // Batch read all contract data
+      const [
+        // USDT data
+        usdtBalanceResult,
+        usdtDecimalsResult,
+
+        // Asset token data
+        assetTokenBalanceResult,
+        assetTokenDecimalsResult,
+        assetTokenNameResult,
+        assetTokenSymbolResult,
+        assetTokenPriceResult,
+        assetInfoResult,
+        assetTokenAllowanceResult,
+
+        // PurchaseManager data
+        isAssetSupportedResult,
+        tradingLimitsResult,
+        feesResult,
+        dailyVolumeResult,
+        isPausedResult,
+      ] = await Promise.all([
+        // USDT reads
         readContract(config, {
           address: USDT_ADDRESS,
           abi: USDT_ABI,
@@ -138,174 +200,125 @@ export const useSellAssetTokens = (
           abi: USDT_ABI,
           functionName: "decimals",
         }),
+
+        // Asset token reads
+        readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "balanceOf",
+          args: [address],
+        }),
+        readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "decimals",
+        }),
+        readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "name",
+        }),
+        readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "symbol",
+        }),
+        readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "getCurrentPrice",
+        }),
+        readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "getAssetInfo",
+        }),
+        readContract(config, {
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "allowance",
+          args: [address, PURCHASE_MANAGER_ADDRESS],
+        }),
+
+        // PurchaseManager reads
+        readContract(config, {
+          address: PURCHASE_MANAGER_ADDRESS,
+          abi: PURCHASE_MANAGER_ABI,
+          functionName: "supportedAssetTokens",
+          args: [assetTokenAddress],
+        }),
+        readContract(config, {
+          address: PURCHASE_MANAGER_ADDRESS,
+          abi: PURCHASE_MANAGER_ABI,
+          functionName: "tradingLimits",
+        }),
+        readContract(config, {
+          address: PURCHASE_MANAGER_ADDRESS,
+          abi: PURCHASE_MANAGER_ABI,
+          functionName: "fees",
+        }),
+        readContract(config, {
+          address: PURCHASE_MANAGER_ADDRESS,
+          abi: PURCHASE_MANAGER_ABI,
+          functionName: "dailyTradingVolume",
+          args: [address, Math.floor(Date.now() / 86400000)], // Current day
+        }),
+        readContract(config, {
+          address: PURCHASE_MANAGER_ADDRESS,
+          abi: PURCHASE_MANAGER_ABI,
+          functionName: "paused",
+        }),
       ]);
 
+      // Set all state
       setUsdtBalance(usdtBalanceResult as bigint);
       setUsdtDecimals(usdtDecimalsResult as number);
-
-      // Read asset token data if address is provided
-      if (assetTokenAddress) {
-        const [
-          assetTokenBalanceResult,
-          assetTokenDecimalsResult,
-          assetTokenNameResult,
-          assetTokenSymbolResult,
-          assetTokenPriceResult,
-          assetInfoResult,
-          isAssetSupportedResult,
-        ] = await Promise.all([
-          readContract(config, {
-            address: assetTokenAddress,
-            abi: ASSET_TOKEN_ABI,
-            functionName: "balanceOf",
-            args: [address],
-          }),
-          readContract(config, {
-            address: assetTokenAddress,
-            abi: ASSET_TOKEN_ABI,
-            functionName: "decimals",
-          }),
-          readContract(config, {
-            address: assetTokenAddress,
-            abi: ASSET_TOKEN_ABI,
-            functionName: "name",
-          }),
-          readContract(config, {
-            address: assetTokenAddress,
-            abi: ASSET_TOKEN_ABI,
-            functionName: "symbol",
-          }),
-          readContract(config, {
-            address: assetTokenAddress,
-            abi: ASSET_TOKEN_ABI,
-            functionName: "getCurrentPrice",
-          }),
-          readContract(config, {
-            address: assetTokenAddress,
-            abi: ASSET_TOKEN_ABI,
-            functionName: "getAssetInfo",
-          }),
-          readContract(config, {
-            address: PURCHASE_MANAGER_ADDRESS,
-            abi: PURCHASE_MANAGER_ABI,
-            functionName: "supportedAssetTokens",
-            args: [assetTokenAddress],
-          }),
-        ]);
-
-        setAssetTokenBalance(assetTokenBalanceResult as bigint);
-        setAssetTokenDecimals(assetTokenDecimalsResult as number);
-        setAssetTokenName(assetTokenNameResult as string);
-        setAssetTokenSymbol(assetTokenSymbolResult as string);
-        setAssetTokenPriceData(assetTokenPriceResult as [bigint, bigint]);
-        setAssetInfoData(assetInfoResult);
-        setIsAssetSupported(isAssetSupportedResult as boolean);
-      }
+      setAssetTokenBalance(assetTokenBalanceResult as bigint);
+      setAssetTokenDecimals(assetTokenDecimalsResult as number);
+      setAssetTokenName(assetTokenNameResult as string);
+      setAssetTokenSymbol(assetTokenSymbolResult as string);
+      setAssetTokenPriceData(assetTokenPriceResult as [bigint, bigint]);
+      setAssetInfoData(assetInfoResult);
+      setAssetTokenAllowance(assetTokenAllowanceResult as bigint);
+      setIsAssetSupported(isAssetSupportedResult as boolean);
+      setTradingLimits(tradingLimitsResult);
+      setFees(feesResult);
+      setDailyVolume(dailyVolumeResult as bigint);
+      setIsPaused(isPausedResult as boolean);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Unknown error occurred";
-      console.error("Error fetching contract data:", errorMessage);
+        err instanceof Error ? err.message : "Failed to load contract data";
+      console.error("Contract data loading error:", err);
       setError(new Error(errorMessage));
     } finally {
       setLoading(false);
     }
-  }, [address, assetTokenAddress, config, isMounted, isConnected]);
+  }, [isConnected, address, assetTokenAddress, config]);
 
-  // Fetch data on mount and when dependencies change
+  // Load data on mount and dependencies change
   useEffect(() => {
-    if (isMounted && isConnected) {
-      fetchContractData();
+    if (isMounted) {
+      loadContractData();
     }
-  }, [fetchContractData, isMounted, isConnected]);
+  }, [isMounted, loadContractData]);
 
-  // Refetch functions with error handling
-  const refetchUSDTBalance = useCallback(async () => {
-    if (!address || !config || !isMounted || !isConnected) return;
-    try {
-      const balance = await readContract(config, {
-        address: USDT_ADDRESS,
-        abi: USDT_ABI,
-        functionName: "balanceOf",
-        args: [address],
-      });
-      setUsdtBalance(balance as bigint);
-    } catch (err) {
-      console.error("Error refetching USDT balance:", err);
-    }
-  }, [address, config, isMounted, isConnected]);
+  // Enhanced refresh function
+  const refreshBalances = useCallback(async () => {
+    setRefreshing(true);
+    await loadContractData();
+    setRefreshing(false);
+  }, [loadContractData]);
 
-  const refetchAssetBalance = useCallback(async () => {
-    if (!address || !config || !assetTokenAddress || !isMounted || !isConnected)
-      return;
-    try {
-      const balance = await readContract(config, {
-        address: assetTokenAddress,
-        abi: ASSET_TOKEN_ABI,
-        functionName: "balanceOf",
-        args: [address],
-      });
-      setAssetTokenBalance(balance as bigint);
-    } catch (err) {
-      console.error("Error refetching asset balance:", err);
-    }
-  }, [address, config, assetTokenAddress, isMounted, isConnected]);
+  // Reset transaction state
+  const resetTransaction = useCallback(() => {
+    setIsTransactionPending(false);
+    setError(null);
+  }, []);
 
-  // Format balance data with safe fallbacks
-  const formattedUSDTBalance = useMemo(() => {
-    if (!usdtBalance || !usdtDecimals) return "0.00";
-    try {
-      return formatUnits(usdtBalance, usdtDecimals);
-    } catch {
-      return "0.00";
-    }
-  }, [usdtBalance, usdtDecimals]);
-
-  const formattedAssetBalance = useMemo(() => {
-    if (!assetTokenBalance || !assetTokenDecimals) return "0.00";
-    try {
-      return formatUnits(assetTokenBalance, assetTokenDecimals);
-    } catch {
-      return "0.00";
-    }
-  }, [assetTokenBalance, assetTokenDecimals]);
-
-  const formattedAssetPrice = useMemo(() => {
-    if (!assetTokenPriceData) return "0.00";
-    try {
-      const [priceRaw] = assetTokenPriceData;
-      return formatUnits(priceRaw, 8); // Asset prices have 8 decimals
-    } catch {
-      return "0.00";
-    }
-  }, [assetTokenPriceData]);
-
-  const assetTokenInfo = useMemo(() => {
-    if (!assetTokenName || !assetTokenSymbol || !assetInfoData) return null;
-
-    try {
-      const [, assetType, , , isActive] = assetInfoData as [
-        string,
-        string,
-        bigint,
-        bigint,
-        boolean
-      ];
-
-      return {
-        name: assetTokenName as string,
-        symbol: assetTokenSymbol as string,
-        assetType: assetType as string,
-        isActive: isActive as boolean,
-      };
-    } catch {
-      return null;
-    }
-  }, [assetTokenName, assetTokenSymbol, assetInfoData]);
-
-  // Validation functions
+  // Enhanced validation functions
   const hasEnoughAssetTokens = useCallback(
     (amount: string): boolean => {
-      if (!assetTokenBalance || !assetTokenDecimals || !amount) return false;
+      if (!assetTokenBalance || !assetTokenDecimals) return false;
       try {
         const amountBigInt = parseUnits(amount, assetTokenDecimals);
         return assetTokenBalance >= amountBigInt;
@@ -316,162 +329,315 @@ export const useSellAssetTokens = (
     [assetTokenBalance, assetTokenDecimals]
   );
 
-  // Estimation functions
-  const estimateSellValue = useCallback(
-    async (tokenAmount: string): Promise<TradeEstimation> => {
-      if (
-        !config ||
-        !assetTokenAddress ||
-        !assetTokenDecimals ||
-        !usdtDecimals ||
-        !isMounted
-      ) {
-        throw new Error("Missing required data for estimation");
+  // Check if can approve asset tokens (for potential future upgrades requiring approval)
+  const canApproveAssetTokens = useMemo((): boolean => {
+    return !!(assetTokenBalance && assetTokenBalance > 0n);
+  }, [assetTokenBalance]);
+
+  // New validation function for sale limits
+  const isSaleWithinLimits = useCallback(
+    (tokenAmount: string): { isValid: boolean; reason?: string } => {
+      if (!tradingLimits || !tradingLimits.limitsEnabled) {
+        return { isValid: true };
+      }
+
+      if (!assetTokenDecimals || !assetTokenPriceData || !usdtDecimals) {
+        return { isValid: false, reason: "Contract data not loaded" };
       }
 
       try {
         const tokenAmountBigInt = parseUnits(tokenAmount, assetTokenDecimals);
-        const usdValue = await readContract(config, {
-          address: assetTokenAddress,
-          abi: ASSET_TOKEN_ABI,
-          functionName: "getUSDValue",
-          args: [tokenAmountBigInt],
-        });
 
-        // Format the USD value from the contract
-        const estimatedValueFormatted = formatUnits(
-          usdValue as bigint,
-          usdtDecimals
-        );
+        // Convert token amount to USD value for limit checking
+        const [priceNumerator] = assetTokenPriceData;
+        const usdValue =
+          (tokenAmountBigInt * priceNumerator) /
+          BigInt(10 ** assetTokenDecimals);
 
-        // Calculate fee (you may need to adjust this based on your contract's fee structure)
-        const feePercentage = 0.005; // 0.5%
-        const feeAmount = (
-          parseFloat(estimatedValueFormatted) * feePercentage
-        ).toString();
+        if (usdValue < tradingLimits.minPurchaseAmount) {
+          return {
+            isValid: false,
+            reason: `Sale value below minimum: ${formatUnits(
+              tradingLimits.minPurchaseAmount,
+              usdtDecimals
+            )}`,
+          };
+        }
 
-        // Net amount after fee
-        const netAmount = (
-          parseFloat(estimatedValueFormatted) - parseFloat(feeAmount)
-        ).toString();
+        if (usdValue > tradingLimits.maxPurchaseAmount) {
+          return {
+            isValid: false,
+            reason: `Sale value above maximum: ${formatUnits(
+              tradingLimits.maxPurchaseAmount,
+              usdtDecimals
+            )}`,
+          };
+        }
 
-        return {
-          estimatedTokens: tokenAmount,
-          estimatedValue: estimatedValueFormatted,
-          fee: feeAmount,
-          netAmount: netAmount,
-        };
-      } catch (error) {
-        console.error("Error estimating sell value:", error);
-        throw error;
+        const remainingDailyLimit =
+          tradingLimits.dailyLimit - (dailyVolume || 0n);
+        if (usdValue > remainingDailyLimit) {
+          return {
+            isValid: false,
+            reason: `Exceeds daily limit. Remaining: ${formatUnits(
+              remainingDailyLimit,
+              usdtDecimals
+            )}`,
+          };
+        }
+
+        return { isValid: true };
+      } catch {
+        return { isValid: false, reason: "Invalid amount format" };
       }
     },
-    [config, assetTokenAddress, assetTokenDecimals, usdtDecimals, isMounted]
+    [
+      tradingLimits,
+      dailyVolume,
+      assetTokenDecimals,
+      assetTokenPriceData,
+      usdtDecimals,
+    ]
   );
 
-  // Transaction functions
-  const sellAssetTokens = useCallback(
-    async (params: AssetSaleParams) => {
-      if (!address || !assetTokenDecimals || !isMounted || !isConnected) {
-        throw new Error("Missing required data or wallet not connected");
+  // Enhanced fee calculation for sales
+  const calculateSaleFees = useCallback(
+    (
+      tokenAmount: string
+    ): { fee: string; netAmount: string; usdValue: string } => {
+      if (
+        !fees ||
+        !assetTokenDecimals ||
+        !assetTokenPriceData ||
+        !usdtDecimals
+      ) {
+        return { fee: "0", netAmount: "0", usdValue: "0" };
       }
 
-      if (!hasEnoughAssetTokens(params.tokenAmount || "0")) {
-        throw new Error("Insufficient asset tokens");
+      try {
+        const tokenAmountBigInt = parseUnits(tokenAmount, assetTokenDecimals);
+
+        // Calculate USD value using asset price
+        const [priceNumerator] = assetTokenPriceData;
+        const usdValue =
+          (tokenAmountBigInt * priceNumerator) /
+          BigInt(10 ** assetTokenDecimals);
+
+        // Calculate redemption fee (selling fee)
+        const feeAmount = (usdValue * fees.redemptionFee) / 10000n;
+        const netAmount = usdValue - feeAmount;
+
+        return {
+          fee: formatUnits(feeAmount, usdtDecimals),
+          netAmount: formatUnits(netAmount, usdtDecimals),
+          usdValue: formatUnits(usdValue, usdtDecimals),
+        };
+      } catch {
+        return { fee: "0", netAmount: "0", usdValue: "0" };
       }
+    },
+    [fees, assetTokenDecimals, assetTokenPriceData, usdtDecimals]
+  );
+
+  // Enhanced estimation function
+  const estimateSellValue = useCallback(
+    async (tokenAmount: string): Promise<TradeEstimation> => {
+      if (!assetTokenPriceData || !assetTokenDecimals || !usdtDecimals) {
+        throw new Error("Contract data not loaded");
+      }
+
+      const { fee, netAmount, usdValue } = calculateSaleFees(tokenAmount);
+      const [priceNumerator] = assetTokenPriceData;
+      const pricePerToken = formatUnits(priceNumerator, usdtDecimals);
+
+      return {
+        estimatedTokens: tokenAmount,
+        estimatedValue: netAmount,
+        fee,
+        netAmount,
+      };
+    },
+    [assetTokenPriceData, assetTokenDecimals, usdtDecimals, calculateSaleFees]
+  );
+
+  // Get maximum sellable amount
+  const getMaxSellAmount = useCallback((): string => {
+    if (!assetTokenBalance || !assetTokenDecimals) {
+      return "0";
+    }
+
+    if (!tradingLimits || !tradingLimits.limitsEnabled) {
+      return formatUnits(assetTokenBalance, assetTokenDecimals);
+    }
+
+    // Convert limits from USD to token amounts
+    if (!assetTokenPriceData || !usdtDecimals) {
+      return formatUnits(assetTokenBalance, assetTokenDecimals);
+    }
+
+    try {
+      const [priceNumerator] = assetTokenPriceData;
+      const remainingDailyLimit =
+        tradingLimits.dailyLimit - (dailyVolume || 0n);
+      const maxTokensFromDailyLimit =
+        (remainingDailyLimit * BigInt(10 ** assetTokenDecimals)) /
+        priceNumerator;
+      const maxTokensFromLimit =
+        (tradingLimits.maxPurchaseAmount * BigInt(10 ** assetTokenDecimals)) /
+        priceNumerator;
+
+      const maxAmount = [
+        assetTokenBalance,
+        maxTokensFromDailyLimit,
+        maxTokensFromLimit,
+      ].reduce((min, current) => (current < min ? current : min));
+
+      return formatUnits(maxAmount, assetTokenDecimals);
+    } catch {
+      return formatUnits(assetTokenBalance, assetTokenDecimals);
+    }
+  }, [
+    assetTokenBalance,
+    assetTokenDecimals,
+    tradingLimits,
+    dailyVolume,
+    assetTokenPriceData,
+    usdtDecimals,
+  ]);
+
+  // Enhanced approve function for asset tokens (if needed for future upgrades)
+  const approveAssetTokens = useCallback(
+    async (amount: string): Promise<void> => {
+      if (!address) throw new Error("Wallet not connected");
+      if (!assetTokenAddress) throw new Error("Asset token address required");
+      if (!assetTokenDecimals)
+        throw new Error("Asset token decimals not loaded");
+      if (isPaused) throw new Error("Trading is paused");
+
+      const amountBigInt = parseUnits(amount, assetTokenDecimals);
 
       setIsTransactionPending(true);
       setError(null);
 
       try {
-        const tokenAmountBigInt = parseUnits(
-          params.tokenAmount || "0",
-          assetTokenDecimals
-        );
+        await writeContract({
+          address: assetTokenAddress,
+          abi: ASSET_TOKEN_ABI,
+          functionName: "approve",
+          args: [PURCHASE_MANAGER_ADDRESS, amountBigInt],
+        });
+      } catch (err) {
+        setIsTransactionPending(false);
+        const errorMessage =
+          err instanceof Error ? err.message : "Approval failed";
+        setError(new Error(errorMessage));
+        throw err;
+      }
+    },
+    [address, assetTokenAddress, assetTokenDecimals, isPaused, writeContract]
+  );
+
+  // Enhanced sell function matching PurchaseManager.sellAssetToken
+  const sellAssetTokens = useCallback(
+    async (params: AssetSaleParams): Promise<void> => {
+      if (!address) throw new Error("Wallet not connected");
+      if (!assetTokenAddress) throw new Error("Asset token address required");
+      if (!assetTokenDecimals)
+        throw new Error("Asset token decimals not loaded");
+      if (isPaused) throw new Error("Trading is paused");
+      if (!isAssetSupported) throw new Error("Asset token not supported");
+
+      const { tokenAmount } = params;
+
+      // Comprehensive validation
+      if (!hasEnoughAssetTokens(tokenAmount)) {
+        throw new Error("Insufficient asset token balance");
+      }
+
+      const limitsCheck = isSaleWithinLimits(tokenAmount);
+      if (!limitsCheck.isValid) {
+        throw new Error(limitsCheck.reason || "Sale exceeds limits");
+      }
+
+      const tokenAmountBigInt = parseUnits(tokenAmount, assetTokenDecimals);
+
+      setIsTransactionPending(true);
+      setError(null);
+
+      try {
+        // Call PurchaseManager.sellAssetToken with exact parameters from ABI
+        // function sellAssetToken(address paymentToken, address assetToken, uint256 tokenAmount)
         await writeContract({
           address: PURCHASE_MANAGER_ADDRESS,
           abi: PURCHASE_MANAGER_ABI,
           functionName: "sellAssetToken",
-          args: [params.assetTokenAddress, USDT_ADDRESS, tokenAmountBigInt],
+          args: [USDT_ADDRESS, assetTokenAddress, tokenAmountBigInt],
         });
-      } catch (error) {
+      } catch (err) {
         setIsTransactionPending(false);
-        const errorMessage =
-          error instanceof Error ? error.message : "Transaction failed";
+        const errorMessage = err instanceof Error ? err.message : "Sale failed";
         setError(new Error(errorMessage));
-        throw error;
+        throw err;
       }
     },
     [
       address,
+      assetTokenAddress,
       assetTokenDecimals,
-      writeContract,
+      isPaused,
+      isAssetSupported,
       hasEnoughAssetTokens,
-      isMounted,
-      isConnected,
+      isSaleWithinLimits,
+      writeContract,
     ]
   );
 
-  // Utility functions
-  const refreshBalances = useCallback(() => {
-    if (isMounted && isConnected) {
-      refetchUSDTBalance();
-      refetchAssetBalance();
-    }
-  }, [refetchUSDTBalance, refetchAssetBalance, isMounted, isConnected]);
-
-  const resetTransaction = useCallback(() => {
-    setIsTransactionPending(false);
-    setError(null);
-  }, []);
-
   // Handle transaction completion
-  const handleTransactionComplete = useCallback(() => {
-    setIsTransactionPending(false);
-    // Refresh balances after a delay to ensure blockchain state is updated
-    setTimeout(() => {
-      refreshBalances();
-    }, 2000);
-  }, [refreshBalances]);
-
-  // Auto refresh balances on transaction confirmation
   useEffect(() => {
-    if (isConfirmed && isMounted) {
-      handleTransactionComplete();
+    if (isConfirmed) {
+      setIsTransactionPending(false);
+      refreshBalances();
     }
-  }, [isConfirmed, handleTransactionComplete, isMounted]);
+  }, [isConfirmed, refreshBalances]);
 
-  // Return default values if not mounted yet
-  if (!isMounted) {
+  // Format computed values
+  const formattedUSDTBalance = useMemo(
+    () =>
+      usdtBalance && usdtDecimals
+        ? formatUnits(usdtBalance, usdtDecimals)
+        : "0",
+    [usdtBalance, usdtDecimals]
+  );
+
+  const formattedAssetTokenBalance = useMemo(
+    () =>
+      assetTokenBalance && assetTokenDecimals
+        ? formatUnits(assetTokenBalance, assetTokenDecimals)
+        : "0",
+    [assetTokenBalance, assetTokenDecimals]
+  );
+
+  const formattedAssetTokenPrice = useMemo(() => {
+    if (!assetTokenPriceData || !usdtDecimals) return "0";
+    const [priceNumerator] = assetTokenPriceData;
+    return formatUnits(priceNumerator, usdtDecimals);
+  }, [assetTokenPriceData, usdtDecimals]);
+
+  const assetTokenInfo = useMemo(() => {
+    if (!assetInfoData || !assetTokenName || !assetTokenSymbol) return null;
     return {
-      loading: false,
-      error: null,
-      usdtBalance: "0.00",
-      assetTokenBalance: "0.00",
-      assetTokenPrice: "0.00",
-      assetTokenInfo: null,
-      isTransactionPending: false,
-      isConfirmed: false,
-      hasEnoughAssetTokens: () => false,
-      isAssetTokenSupported: false,
-      estimateSellValue: async () => ({
-        estimatedTokens: "0",
-        estimatedValue: "0",
-        fee: "0",
-        netAmount: "0",
-      }),
-      sellAssetTokens: async () => {
-        throw new Error("Component not mounted");
-      },
-      refreshBalances: () => {},
-      resetTransaction: () => {},
+      name: assetTokenName,
+      symbol: assetTokenSymbol,
+      assetType: assetInfoData.assetType || "Unknown",
+      isActive: assetInfoData.isActive || false,
     };
-  }
+  }, [assetInfoData, assetTokenName, assetTokenSymbol]);
 
   return {
     // Loading and error states
     loading,
     error: error || writeError || receiptError,
+    refreshing,
 
     // Balance data
     usdtBalance: formattedUSDTBalance,
@@ -479,11 +645,16 @@ export const useSellAssetTokens = (
     usdtDecimals,
 
     // Asset token data
-    assetTokenBalance: formattedAssetBalance,
+    assetTokenBalance: formattedAssetTokenBalance,
     assetTokenBalanceRaw: assetTokenBalance,
     assetTokenDecimals,
-    assetTokenPrice: formattedAssetPrice,
+    assetTokenPrice: formattedAssetTokenPrice,
     assetTokenInfo,
+
+    // Trading limits and fees
+    tradingLimits,
+    fees,
+    dailyVolume,
 
     // Transaction states
     isTransactionPending:
@@ -493,16 +664,21 @@ export const useSellAssetTokens = (
 
     // Validation functions
     hasEnoughAssetTokens,
-    isAssetTokenSupported: !!isAssetSupported,
+    isAssetTokenSupported: isAssetSupported || false,
+    canApproveAssetTokens,
+    isSaleWithinLimits,
 
     // Estimation functions
     estimateSellValue,
+    calculateSaleFees,
 
     // Transaction functions
+    approveAssetTokens,
     sellAssetTokens,
 
     // Utility functions
     refreshBalances,
     resetTransaction,
+    getMaxSellAmount,
   };
 };
