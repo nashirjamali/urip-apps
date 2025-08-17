@@ -3,204 +3,60 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Building2,
+  Globe,
+  Calendar,
+  Users,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 import { Layout } from "@/components/ui/Layout";
 import { LoadingState } from "@/components/ui/States/LoadingState";
 import { ErrorState } from "@/components/ui/States/ErrorState";
-import { EmptyState } from "@/components/ui/States/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader/PageHeader";
 import { LineChartWidget } from "@/components/partials/Trading/LineChartWidget";
-import { TradePanel } from "@/components/partials/Trading/TradePanel";
 import { AssetInfo } from "@/components/partials/Trading/AssetInfo";
 import { NewsSection } from "@/components/partials/Trading/NewsSection";
 import { MarketStats } from "@/components/partials/Trading/MarketStats";
 import { PerformanceSummary } from "@/components/partials/Trading/PerformanceSummary";
-
-const mockTradingAssets = [
-  {
-    id: 1,
-    name: "Bitcoin",
-    symbol: "BTC",
-    price: "$1.906.551.118",
-    priceNumber: 1906551118,
-    change24h: -0.8,
-    change7d: 1.0,
-    change1m: -0.41,
-    change1y: 110.43,
-    marketCap: "$37.964 Trilliun",
-    marketCapNumber: 37964000000000,
-    icon: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
-    color: "bg-orange-500",
-    category: "Cryptocurrency",
-    type: "CRYPTO",
-    description:
-      "Bitcoin is a decentralized digital currency that can be transferred on the peer-to-peer bitcoin network.",
-    volume24h: "$25.123 Trilliun",
-    high24h: "$1.950.000.000",
-    low24h: "$1.880.000.000",
-  },
-  {
-    id: 2,
-    name: "Ethereum",
-    symbol: "ETH",
-    price: "$123.456.789",
-    priceNumber: 123456789,
-    change24h: 3.21,
-    change7d: -2.45,
-    change1m: 12.34,
-    change1y: 345.67,
-    marketCap: "$14.567 Trilliun",
-    marketCapNumber: 14567000000000,
-    icon: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
-    color: "bg-blue-600",
-    category: "Cryptocurrency",
-    type: "CRYPTO",
-    description:
-      "Ethereum is a decentralized platform that runs smart contracts and enables decentralized applications.",
-    volume24h: "$8.945 Trilliun",
-    high24h: "$130.000.000",
-    low24h: "$120.000.000",
-  },
-  {
-    id: 3,
-    name: "Apple Inc.",
-    symbol: "tAAPL",
-    price: "$3.456.789",
-    priceNumber: 3456789,
-    change24h: 2.45,
-    change7d: -1.23,
-    change1m: 15.67,
-    change1y: 234.56,
-    marketCap: "$52.123 Trilliun",
-    marketCapNumber: 52123000000000,
-    icon: "https://logo.clearbit.com/apple.com",
-    color: "bg-gray-800",
-    category: "Technology Stock",
-    type: "STOCK",
-    description:
-      "Apple Inc. is an American multinational technology company that designs, develops, and sells consumer electronics, computer software, and online services.",
-    volume24h: "$1.234 Trilliun",
-    high24h: "$3.500.000",
-    low24h: "$3.400.000",
-    sector: "Technology",
-    industry: "Consumer Electronics",
-    country: "United States",
-    exchange: "NASDAQ",
-    website: "https://www.apple.com",
-    employees: "164,000",
-    founded: "1976",
-    ceo: "Tim Cook",
-  },
-  {
-    id: 4,
-    name: "Microsoft Corp",
-    symbol: "MSFT",
-    price: "$6.789.012",
-    priceNumber: 6789012,
-    change24h: 1.25,
-    change7d: 3.45,
-    change1m: 8.9,
-    change1y: 189.34,
-    marketCap: "$45.678 Trilliun",
-    marketCapNumber: 45678000000000,
-    icon: "https://logo.clearbit.com/microsoft.com",
-    color: "bg-blue-600",
-    category: "Technology Stock",
-    type: "STOCK",
-    description:
-      "Microsoft Corporation is an American multinational technology corporation which produces computer software, consumer electronics, personal computers, and related services.",
-    volume24h: "$987 Billion",
-    high24h: "$7.000.000",
-    low24h: "$6.500.000",
-    sector: "Technology",
-    industry: "Software",
-    country: "United States",
-    exchange: "NASDAQ",
-    website: "https://www.microsoft.com",
-    employees: "221,000",
-    founded: "1975",
-    ceo: "Satya Nadella",
-  },
-  {
-    id: 5,
-    name: "Tesla Inc.",
-    symbol: "TSLA",
-    price: "$4.123.456",
-    priceNumber: 4123456,
-    change24h: -2.15,
-    change7d: 8.76,
-    change1m: -5.43,
-    change1y: 67.23,
-    marketCap: "$23.456 Trilliun",
-    marketCapNumber: 23456000000000,
-    icon: "https://logo.clearbit.com/tesla.com",
-    color: "bg-red-600",
-    category: "Automotive Stock",
-    type: "STOCK",
-    description:
-      "Tesla, Inc. is an American electric vehicle and clean energy company based in Austin, Texas.",
-    volume24h: "$2.345 Trilliun",
-    high24h: "$4.200.000",
-    low24h: "$4.000.000",
-    sector: "Automotive",
-    industry: "Electric Vehicles",
-    country: "United States",
-    exchange: "NASDAQ",
-    website: "https://www.tesla.com",
-    employees: "127,855",
-    founded: "2003",
-    ceo: "Elon Musk",
-  },
-];
+import { useAssetDetail } from "@/hooks/contracts/useAssetDetail";
+import { PriceChange } from "@/components/ui/PriceChange/PriceChange";
+import HoldingsSummary from "@/components/partials/Trading/HoldingsSummary";
 
 const AssetDetails: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const symbol = params.symbol as string;
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [asset, setAsset] = useState<any>(null);
 
-  useEffect(() => {
-    // Simulate API loading
-    const loadAsset = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  // Use the smart contract hook for asset details
+  const {
+    asset,
+    isLoading,
+    error,
+    userHoldings,
+    isHoldingsLoading,
+    refreshAssetData,
+  } = useAssetDetail(symbol);
 
-        // Simulate network delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Find asset data
-        const foundAsset = mockTradingAssets.find(
-          (a) =>
-            a.symbol.toLowerCase() === symbol?.toLowerCase()
-        );
-
-        if (!foundAsset) {
-          setError("Asset not found");
-        } else {
-          setAsset(foundAsset);
-        }
-      } catch (err) {
-        setError("Failed to load asset data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (symbol) {
-      loadAsset();
-    }
-  }, [symbol]);
+  // Filter holdings for current asset
+  const currentAssetHoldings = userHoldings.filter(
+    (holding) =>
+      holding.symbol === symbol ||
+      holding.symbol === `t${symbol}` ||
+      holding.symbol.replace("t", "") === symbol
+  );
 
   const handleBackClick = () => {
     router.push("/trading");
   };
 
-  const handleRefresh = () => {
-    // Reload the page data
-    window.location.reload();
+  const handleRefresh = async () => {
+    await refreshAssetData();
   };
 
   // Loading State
@@ -209,13 +65,13 @@ const AssetDetails: React.FC = () => {
       <Layout theme="dark">
         <PageHeader
           title="Asset Details"
-          subtitle="Loading asset information..."
+          subtitle="Loading asset information from blockchain..."
           showBackButton
           onBackClick={handleBackClick}
           theme="dark"
         />
         <LoadingState
-          message="Loading asset details from blockchain..."
+          message="Fetching asset data from smart contracts..."
           size="lg"
         />
       </Layout>
@@ -223,7 +79,7 @@ const AssetDetails: React.FC = () => {
   }
 
   // Error State
-  if (error) {
+  if (error || !asset) {
     return (
       <Layout theme="dark">
         <PageHeader
@@ -234,75 +90,71 @@ const AssetDetails: React.FC = () => {
           theme="dark"
         />
         <ErrorState
-          type={error === "Asset not found" ? "404" : "generic"}
-          title={
-            error === "Asset not found"
-              ? "Asset Not Found"
-              : "Error Loading Asset"
-          }
+          type={!asset ? "404" : "generic"}
+          title={!asset ? "Asset Not Found" : "Error Loading Asset"}
           message={
-            error === "Asset not found"
-              ? `The asset "${symbol}" could not be found in our database.`
-              : "Failed to load asset information. Please try again."
+            !asset
+              ? `The asset "${symbol}" was not found in our supported assets list.`
+              : error || "Unable to load asset details from the blockchain."
           }
           actions={[
             {
-              label: "Back to Markets",
-              onClick: handleBackClick,
-              variant: "primary",
-              icon: <ArrowLeft className="w-4 h-4" />,
+              label: !asset ? "Browse Assets" : "Retry",
+              onClick: !asset ? () => router.push("/trading") : handleRefresh,
             },
-            ...(error !== "Asset not found"
-              ? [
-                  {
-                    label: "Try Again",
-                    onClick: handleRefresh,
-                    variant: "secondary" as const,
-                  },
-                ]
-              : []),
           ]}
-          size="lg"
         />
       </Layout>
     );
   }
 
-  // Empty State (fallback)
-  if (!asset) {
-    return (
-      <Layout theme="dark">
-        <PageHeader
-          title="Asset Details"
-          subtitle="No asset data available"
-          showBackButton
-          onBackClick={handleBackClick}
-          theme="dark"
-        />
-        <EmptyState
-          title="No Asset Data"
-          description="Unable to load asset information."
-          action={{
-            label: "Back to Markets",
-            onClick: handleBackClick,
-            variant: "primary",
-          }}
-          size="lg"
-        />
-      </Layout>
-    );
-  }
+  // Transform asset data to match component prop interfaces
+  const assetForComponents = {
+    // For LineChartWidget
+    symbol: asset.symbol,
+    type: asset.assetType || "STOCK",
 
-  // Success State - Show Asset Details
+    // For AssetInfo
+    name: asset.name,
+    description: asset.description || "No description available",
+    sector: asset.sector,
+    industry: asset.industry,
+    exchange: asset.exchange,
+    country: asset.country,
+    founded: asset.founded,
+    employees: asset.employees,
+
+    // For NewsSection
+    // name: already defined above
+    // symbol: already defined above
+
+    // For MarketStats
+    marketCap: asset.marketCapNumber || "N/A",
+    volume24h: asset.volume24h || "N/A",
+    change24h: asset.change24h || 0,
+    change7d: asset.change7d || 0,
+    change1m: asset.change1m || 0,
+    change1y: asset.change1y || 0,
+    website: asset.website,
+    ceo: asset.ceo,
+    // type: already defined above
+
+    // For PerformanceSummary
+    price: asset.price,
+    high24h: asset.high24h || "N/A",
+    low24h: asset.low24h || "N/A",
+    // change24h: already defined above
+  };
+
   return (
     <Layout theme="dark">
       {/* Page Header */}
       <PageHeader
         title={asset.name}
-        subtitle={`${asset.symbol} • ${
-          asset.type === "STOCK"
+        subtitle={`${
+          asset.assetType === "STOCK"
             ? "Stock"
-            : asset.type === "CRYPTO"
+            : asset.assetType === "CRYPTO"
             ? "Crypto"
             : "Commodity"
         }`}
@@ -320,13 +172,16 @@ const AssetDetails: React.FC = () => {
           },
           {
             label: "24h Change",
-            value: `${asset.change24h > 0 ? "+" : ""}${asset.change24h.toFixed(
-              2
-            )}%`,
+            value:
+              asset.change24h !== undefined
+                ? `${asset.change24h > 0 ? "+" : ""}${asset.change24h.toFixed(
+                    2
+                  )}%`
+                : "N/A",
           },
           {
             label: "Market Cap",
-            value: asset.marketCap,
+            value: asset.marketCapNumber || "N/A",
           },
         ]}
         actions={[
@@ -338,30 +193,184 @@ const AssetDetails: React.FC = () => {
         ]}
       />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Column - Charts and Info */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Line Chart */}
-          <LineChartWidget asset={asset} />
+      {/* Asset Header with Smart Contract Info */}
+      <div className="container mx-auto px-6 py-4">
+        <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              {asset.assetIcon && (
+                <img
+                  src={asset.assetIcon}
+                  alt={asset.name}
+                  className="w-12 h-12 rounded-lg"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              )}
+              <div>
+                <h1 className="text-3xl font-bold text-white">{asset.name}</h1>
+                <div className="flex items-center space-x-3 mt-1">
+                  <span className="text-gray-400 text-lg">{asset.symbol}</span>
+                  {asset.exchange && (
+                    <span className="text-gray-500 text-sm">
+                      {asset.exchange}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-white mb-1">
+                {asset.price}
+              </div>
+              {asset.change24h !== undefined && (
+                <PriceChange value={asset.change24h} size="lg" />
+              )}
+            </div>
+          </div>
 
-          {/* Asset Information */}
-          <AssetInfo asset={asset} />
-
-          {/* News Section */}
-          <NewsSection asset={asset} />
+          {/* Token Contract Info */}
+          {asset.tokenAddress && (
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Token Contract:</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-white font-mono text-sm">
+                    {asset.tokenAddress.slice(0, 6)}...
+                    {asset.tokenAddress.slice(-4)}
+                  </span>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(asset.tokenAddress)
+                    }
+                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                    title="Copy contract address"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Trade Panel */}
-          <TradePanel asset={asset} />
+      {/* Main Content Grid */}
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Column - Charts and Info */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Line Chart */}
+            <LineChartWidget asset={assetForComponents} />
 
-          {/* Market Stats */}
-          <MarketStats asset={asset} />
+            {/* Asset Information */}
+            <AssetInfo asset={assetForComponents} />
 
-          {/* Performance Summary */}
-          <PerformanceSummary asset={asset} />
+            {/* News Section */}
+            <NewsSection asset={assetForComponents} />
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            {/* Holdings Summary */}
+            <HoldingsSummary
+              holdings={currentAssetHoldings}
+              isLoading={isHoldingsLoading}
+            />
+
+            {/* Performance Summary */}
+            <PerformanceSummary asset={assetForComponents} />
+
+            {/* Additional Asset Details */}
+            {(asset.category ||
+              asset.country ||
+              asset.founded ||
+              asset.employees ||
+              asset.ceo ||
+              asset.website) && (
+              <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2" />
+                  Additional Details
+                </h3>
+                <div className="space-y-3">
+                  {asset.category && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Category</span>
+                      <span className="text-white font-medium">
+                        {asset.category}
+                      </span>
+                    </div>
+                  )}
+                  {asset.country && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 flex items-center">
+                        <Globe className="w-3 h-3 mr-1" />
+                        Country
+                      </span>
+                      <span className="text-white font-medium">
+                        {asset.country}
+                      </span>
+                    </div>
+                  )}
+                  {asset.founded && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 flex items-center">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        Founded
+                      </span>
+                      <span className="text-white font-medium">
+                        {asset.founded}
+                      </span>
+                    </div>
+                  )}
+                  {asset.employees && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 flex items-center">
+                        <Users className="w-3 h-3 mr-1" />
+                        Employees
+                      </span>
+                      <span className="text-white font-medium">
+                        {asset.employees}
+                      </span>
+                    </div>
+                  )}
+                  {asset.ceo && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">CEO</span>
+                      <span className="text-white font-medium">
+                        {asset.ceo}
+                      </span>
+                    </div>
+                  )}
+                  {asset.website && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Website</span>
+                      <a
+                        href={asset.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 transition-colors flex items-center"
+                      >
+                        Visit <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Asset Description */}
+            {asset.description && (
+              <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-3">About</h3>
+                <p className="text-gray-300 leading-relaxed">
+                  {asset.description}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Layout>
