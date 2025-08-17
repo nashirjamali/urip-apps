@@ -4,6 +4,7 @@ export * from "./assetTrading";
 export * from "./mutualFundTrading";
 export * from "./daoGovernance";
 export * from "./trading";
+export * from "./portfolio";
 
 export interface Asset {
   tokenAddress: string;
