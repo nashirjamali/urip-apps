@@ -24,7 +24,9 @@ import { AssetInfo } from "@/components/partials/Trading/AssetInfo";
 import { NewsSection } from "@/components/partials/Trading/NewsSection";
 import { MarketStats } from "@/components/partials/Trading/MarketStats";
 import { PerformanceSummary } from "@/components/partials/Trading/PerformanceSummary";
+import { TradePanel } from "@/components/partials/Trading/TradePanel";
 import { useAssetDetail } from "@/hooks/contracts/useAssetDetail";
+import { useAssetTrading } from "@/hooks/contracts/useAssetTrading";
 import { PriceChange } from "@/components/ui/PriceChange/PriceChange";
 import HoldingsSummary from "@/components/partials/Trading/HoldingsSummary";
 
@@ -33,7 +35,7 @@ const AssetDetails: React.FC = () => {
   const router = useRouter();
   const symbol = params.symbol as string;
 
-  // Use the smart contract hook for asset details
+  // Use the smart contract hooks for asset details and trading
   const {
     asset,
     isLoading,
@@ -41,7 +43,13 @@ const AssetDetails: React.FC = () => {
     userHoldings,
     isHoldingsLoading,
     refreshAssetData,
+    buyHook,
+    sellHook,
+    executeTrade,
   } = useAssetDetail(symbol);
+
+  // Enhanced trading hook for the TradePanel
+  const tradingHook = useAssetTrading(asset?.tokenAddress);
 
   // Filter holdings for current asset
   const currentAssetHoldings = userHoldings.filter(
@@ -123,6 +131,7 @@ const AssetDetails: React.FC = () => {
     country: asset.country,
     founded: asset.founded,
     employees: asset.employees,
+    tokenAddress: asset.tokenAddress,
 
     // For NewsSection
     // name: already defined above
@@ -141,6 +150,7 @@ const AssetDetails: React.FC = () => {
 
     // For PerformanceSummary
     price: asset.price,
+    priceNumber: asset.price || 0,
     high24h: asset.high24h || "N/A",
     low24h: asset.low24h || "N/A",
     // change24h: already defined above
@@ -188,61 +198,59 @@ const AssetDetails: React.FC = () => {
           {
             label: "Refresh",
             onClick: handleRefresh,
-            variant: "ghost",
+            icon: <RefreshCw />,
+            variant: "secondary",
           },
         ]}
       />
 
-      {/* Asset Header with Smart Contract Info */}
-      <div className="container mx-auto px-6 py-4">
-        <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              {asset.assetIcon && (
-                <img
-                  src={asset.assetIcon}
-                  alt={asset.name}
-                  className="w-12 h-12 rounded-lg"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              )}
-              <div>
-                <h1 className="text-3xl font-bold text-white">{asset.name}</h1>
-                <div className="flex items-center space-x-3 mt-1">
-                  <span className="text-gray-400 text-lg">{asset.symbol}</span>
-                  {asset.exchange && (
-                    <span className="text-gray-500 text-sm">
-                      {asset.exchange}
-                    </span>
-                  )}
+      {/* Price and Stats Header */}
+      <div className="bg-gray-900/50 backdrop-blur border-b border-gray-800">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center">
+                <h1 className="text-2xl font-bold text-white mr-3">
+                  {asset.price}
+                </h1>
+                {asset.change24h !== undefined && (
+                  <PriceChange value={asset.change24h} size="lg" />
+                )}
+              </div>
+              <div className="flex space-x-4 text-sm">
+                <div>
+                  <span className="text-gray-400">24h High: </span>
+                  <span className="text-white font-medium">
+                    {asset.high24h || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">24h Low: </span>
+                  <span className="text-white font-medium">
+                    {asset.low24h || "N/A"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Volume: </span>
+                  <span className="text-white font-medium">
+                    {asset.volume24h || "N/A"}
+                  </span>
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-white mb-1">
-                {asset.price}
-              </div>
-              {asset.change24h !== undefined && (
-                <PriceChange value={asset.change24h} size="lg" />
-              )}
-            </div>
-          </div>
 
-          {/* Token Contract Info */}
-          {asset.tokenAddress && (
-            <div className="mt-4 pt-4 border-t border-gray-700">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400">Token Contract:</span>
+            {/* Token Contract Info */}
+            {asset.tokenAddress && (
+              <div className="text-right">
                 <div className="flex items-center space-x-2">
+                  <span className="text-gray-400 text-sm">Contract:</span>
                   <span className="text-white font-mono text-sm">
                     {asset.tokenAddress.slice(0, 6)}...
                     {asset.tokenAddress.slice(-4)}
                   </span>
                   <button
                     onClick={() =>
-                      navigator.clipboard.writeText(asset.tokenAddress)
+                      navigator.clipboard.writeText(asset.tokenAddress!)
                     }
                     className="text-blue-400 hover:text-blue-300 transition-colors"
                     title="Copy contract address"
@@ -251,13 +259,73 @@ const AssetDetails: React.FC = () => {
                   </button>
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* Additional Asset Details */}
+          {(asset.category ||
+            asset.country ||
+            asset.founded ||
+            asset.employees ||
+            asset.ceo ||
+            asset.website) && (
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <div className="flex items-center mb-3">
+                <Building2 className="w-5 h-5 mr-2 text-gray-400" />
+                <h3 className="text-lg font-semibold text-white">
+                  Additional Details
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {asset.category && (
+                  <div>
+                    <span className="text-gray-400 text-sm">Category</span>
+                    <div className="text-white font-medium">
+                      {asset.category}
+                    </div>
+                  </div>
+                )}
+                {asset.country && (
+                  <div>
+                    <span className="text-gray-400 text-sm flex items-center">
+                      <Globe className="w-3 h-3 mr-1" />
+                      Country
+                    </span>
+                    <div className="text-white font-medium">
+                      {asset.country}
+                    </div>
+                  </div>
+                )}
+                {asset.founded && (
+                  <div>
+                    <span className="text-gray-400 text-sm flex items-center">
+                      <Calendar className="w-3 h-3 mr-1" />
+                      Founded
+                    </span>
+                    <div className="text-white font-medium">
+                      {asset.founded}
+                    </div>
+                  </div>
+                )}
+                {asset.employees && (
+                  <div>
+                    <span className="text-gray-400 text-sm flex items-center">
+                      <Users className="w-3 h-3 mr-1" />
+                      Employees
+                    </span>
+                    <div className="text-white font-medium">
+                      {asset.employees}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column - Charts and Info */}
           <div className="lg:col-span-3 space-y-6">
@@ -273,6 +341,20 @@ const AssetDetails: React.FC = () => {
 
           {/* Right Sidebar */}
           <div className="space-y-6">
+            {/* Enhanced Trading Panel with Smart Contract Integration */}
+            <TradePanel
+              asset={{
+                name: assetForComponents.name,
+                price: assetForComponents.price,
+                priceNumber: parseInt(assetForComponents.priceNumber as string),
+                symbol: assetForComponents.symbol,
+                tokenAddress: assetForComponents.tokenAddress,
+              }}
+              tradingHook={tradingHook}
+              onTradeComplete={refreshAssetData}
+              className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg"
+            />
+
             {/* Holdings Summary */}
             <HoldingsSummary
               holdings={currentAssetHoldings}
@@ -281,95 +363,6 @@ const AssetDetails: React.FC = () => {
 
             {/* Performance Summary */}
             <PerformanceSummary asset={assetForComponents} />
-
-            {/* Additional Asset Details */}
-            {(asset.category ||
-              asset.country ||
-              asset.founded ||
-              asset.employees ||
-              asset.ceo ||
-              asset.website) && (
-              <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <Building2 className="w-5 h-5 mr-2" />
-                  Additional Details
-                </h3>
-                <div className="space-y-3">
-                  {asset.category && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Category</span>
-                      <span className="text-white font-medium">
-                        {asset.category}
-                      </span>
-                    </div>
-                  )}
-                  {asset.country && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400 flex items-center">
-                        <Globe className="w-3 h-3 mr-1" />
-                        Country
-                      </span>
-                      <span className="text-white font-medium">
-                        {asset.country}
-                      </span>
-                    </div>
-                  )}
-                  {asset.founded && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400 flex items-center">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        Founded
-                      </span>
-                      <span className="text-white font-medium">
-                        {asset.founded}
-                      </span>
-                    </div>
-                  )}
-                  {asset.employees && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400 flex items-center">
-                        <Users className="w-3 h-3 mr-1" />
-                        Employees
-                      </span>
-                      <span className="text-white font-medium">
-                        {asset.employees}
-                      </span>
-                    </div>
-                  )}
-                  {asset.ceo && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">CEO</span>
-                      <span className="text-white font-medium">
-                        {asset.ceo}
-                      </span>
-                    </div>
-                  )}
-                  {asset.website && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Website</span>
-                      <a
-                        href={asset.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 transition-colors flex items-center"
-                      >
-                        Visit <ExternalLink className="w-3 h-3 ml-1" />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Asset Description */}
-            {asset.description && (
-              <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">About</h3>
-                <p className="text-gray-300 leading-relaxed">
-                  {asset.description}
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>

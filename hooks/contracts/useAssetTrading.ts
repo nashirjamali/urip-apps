@@ -121,7 +121,7 @@ export const useAssetTrading = (
     async (params: AssetTradeParams) => {
       await buyHook.buyAssetTokens(params);
       // Refresh data after successful transaction
-      setTimeout(refreshBalances, 2000); // Small delay to allow blockchain state to update
+      // setTimeout(refreshBalances, 2000); // Small delay to allow blockchain state to update
     },
     [buyHook, refreshBalances]
   );
@@ -130,7 +130,7 @@ export const useAssetTrading = (
     async (params: AssetSaleParams) => {
       await sellHook.sellAssetTokens(params);
       // Refresh data after successful transaction
-      setTimeout(refreshBalances, 2000); // Small delay to allow blockchain state to update
+      // setTimeout(refreshBalances, 2000); // Small delay to allow blockchain state to update
     },
     [sellHook, refreshBalances]
   );

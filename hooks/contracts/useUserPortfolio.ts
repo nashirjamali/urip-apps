@@ -495,7 +495,7 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
       refetchFundStats(),
       refetchNAV(),
       refetchAssetBalances(),
-      refreshMutualFund(),
+      // refreshMutualFund(),
       refreshList(),
     ]);
     await loadPortfolioData();
@@ -505,7 +505,7 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
     refetchFundStats,
     refetchNAV,
     refetchAssetBalances,
-    refreshMutualFund,
+    // refreshMutualFund,
     refreshList,
     loadPortfolioData,
   ]);
