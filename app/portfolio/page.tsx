@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useMemo } from "react";
 import { AuthWrapper } from "@/components/revamp/auth/AuthWrapper";
 import { Layout } from "@/components/ui/Layout";
 
@@ -12,104 +12,225 @@ import { MutualFundCard } from "@/components/partials/Portfolio/MutualFundCard";
 import { PerformanceChart } from "@/components/partials/Portfolio/PerformanceChart";
 
 import type { Asset, MutualFund } from "@/types";
-import {
-  calculateTotalInvestmentValue,
-  calculateTotalPnL,
-} from "@/lib/portfolioCalculation";
-
-// Mock data - could be moved to a separate file or fetched from API
-const mockPortfolioAssets: Asset[] = [
-  {
-    tokenAddress: "0x7a346368cb82bca986e16d91fa1846f3e2f2f081",
-    name: "Apple Inc.",
-    symbol: "tAAPL",
-    assetType: "STOCK",
-    icon: "🍎",
-    investmentValueAsset: "2.5 tAAPL",
-    investmentValueUSD: "$3,080.00",
-    pnl: "+8.2%",
-    pnlAmount: "+$233.60",
-    isProfitable: true,
-  },
-  {
-    tokenAddress: "0xdf1a0e84ad813a178cdcf6fdfec1876f78bb471d",
-    name: "Microsoft Corp",
-    symbol: "tMSFT",
-    assetType: "STOCK",
-    icon: "🏢",
-    investmentValueAsset: "5.0 tMSFT",
-    investmentValueUSD: "$2,140.00",
-    pnl: "-2.1%",
-    pnlAmount: "-$45.92",
-    isProfitable: false,
-  },
-  {
-    tokenAddress: "0x8049cd4055b32e810efad90e998bbe82a58d5ab9",
-    name: "Bitcoin",
-    symbol: "tBTC",
-    assetType: "CRYPTO",
-    icon: "₿",
-    investmentValueAsset: "0.1 tBTC",
-    investmentValueUSD: "$6,750.00",
-    pnl: "+15.4%",
-    pnlAmount: "+$900.25",
-    isProfitable: true,
-  },
-  {
-    tokenAddress: "0xf80567a323c99c99086d0d6884d7b03aff5c8903",
-    name: "Gold",
-    symbol: "tXAU",
-    assetType: "COMMODITY",
-    icon: "🥇",
-    investmentValueAsset: "3.2 tXAU",
-    investmentValueUSD: "$7,680.00",
-    pnl: "+3.7%",
-    pnlAmount: "+$275.40",
-    isProfitable: true,
-  },
-];
-
-const mockMutualFund: MutualFund = {
-  investmentValueURIP: "12.5 URIP",
-  investmentValueUSD: "$1,562.50",
-  pnl: "+6.8%",
-  pnlAmount: "+$99.75",
-  isProfitable: true,
-};
+import { useUserPortfolio } from "@/hooks/contracts/useUserPortfolio";
+import { useAccount } from "wagmi";
 
 const PortfolioPage: React.FC = () => {
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const { isConnected } = useAccount();
 
-  // Calculate totals using utility functions
-  const totalInvestmentValue = calculateTotalInvestmentValue(
-    mockPortfolioAssets,
-    mockMutualFund
-  );
+  const {
+    portfolioData,
+    isLoading,
+    isError,
+    errorMessage,
+    lastFetched,
+    refresh,
+    refreshAll,
+    getActiveAssets,
+    getTotalValue,
+  } = useUserPortfolio();
 
-  const totalPnL = calculateTotalPnL(mockPortfolioAssets, mockMutualFund);
+  // Transform portfolio data to match existing component interfaces
+  const transformedAssets: Asset[] = useMemo(() => {
+    if (!portfolioData?.directAssets) return [];
 
-  const assetCount = mockPortfolioAssets.length + 1; // +1 for mutual fund
+    return portfolioData.directAssets.map((asset) => ({
+      tokenAddress: asset.tokenAddress,
+      name: asset.name,
+      symbol: asset.symbol,
+      assetType: asset.assetType,
+      icon: asset.assetIcon || getDefaultIcon(asset.assetType),
+      investmentValueAsset: `${asset.investmentValueAmount} ${asset.symbol}`,
+      investmentValueUSD: asset.investmentValueUSD,
+      pnl: asset.pnl.percentage,
+      pnlAmount: `${asset.pnl.isPositive ? "+" : ""}${asset.pnl.amount}`,
+      isProfitable: asset.pnl.isPositive,
+    }));
+  }, [portfolioData?.directAssets]);
+
+  const transformedMutualFund: MutualFund = useMemo(() => {
+    if (!portfolioData?.uripFundAsset) {
+      return {
+        investmentValueURIP: "0 URIP",
+        investmentValueUSD: "$0.00",
+        pnl: "0%",
+        pnlAmount: "$0.00",
+        isProfitable: true,
+      };
+    }
+
+    const fundAsset = portfolioData.uripFundAsset;
+    return {
+      investmentValueURIP: `${fundAsset.investmentValueAmount} ${fundAsset.symbol}`,
+      investmentValueUSD: fundAsset.investmentValueUSD,
+      pnl: fundAsset.pnl.percentage,
+      pnlAmount: `${fundAsset.pnl.isPositive ? "+" : ""}${
+        fundAsset.pnl.amount
+      }`,
+      isProfitable: fundAsset.pnl.isPositive,
+    };
+  }, [portfolioData?.uripFundAsset]);
+
+  // Calculate totals from real data
+  const totalInvestmentValue = useMemo(() => {
+    return portfolioData?.summary.totalInvestmentValueUSD || "$0.00";
+  }, [portfolioData?.summary.totalInvestmentValueUSD]);
+
+  const totalPnL = useMemo(() => {
+    if (!portfolioData?.summary.totalPnL) return "$0.00";
+    const pnl = portfolioData.summary.totalPnL;
+    return `${pnl.isPositive ? "+" : ""}${pnl.amount}`;
+  }, [portfolioData?.summary.totalPnL]);
+
+  const assetCount = useMemo(() => {
+    return portfolioData?.summary.totalAssetsCount || 0;
+  }, [portfolioData?.summary.totalAssetsCount]);
+
+  // Helper function to get default icons
+  const getDefaultIcon = (assetType: string): string => {
+    switch (assetType) {
+      case "STOCK":
+        return "📈";
+      case "CRYPTO":
+        return "₿";
+      case "COMMODITY":
+        return "🥇";
+      case "FUND":
+        return "💼";
+      default:
+        return "💰";
+    }
+  };
 
   // Event handlers
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      alert("Portfolio data refreshed!");
-    }, 2000);
+  const handleRefresh = async () => {
+    try {
+      await refresh();
+    } catch (error) {
+      console.error("Failed to refresh portfolio:", error);
+      // You might want to show a toast notification here
+    }
+  };
+
+  const handleRefreshAll = async () => {
+    try {
+      await refreshAll();
+    } catch (error) {
+      console.error("Failed to refresh all portfolio data:", error);
+      // You might want to show a toast notification here
+    }
   };
 
   const handleSettings = () => {
+    // Navigate to portfolio settings or open settings modal
     alert("Portfolio settings");
   };
 
   const handleViewDetails = (assetName: string) => {
+    // Navigate to asset details page or open details modal
     alert(`Viewing details for ${assetName}`);
   };
 
   const handleViewMutualFund = () => {
+    // Navigate to mutual fund details page
     alert("Viewing mutual fund details");
   };
+
+  // Auto-refresh portfolio data periodically
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const intervalId = setInterval(() => {
+      refresh();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [isConnected, refresh]);
+
+  // Show loading state
+  if (isLoading && !portfolioData) {
+    return (
+      <AuthWrapper requireAuth={true}>
+        <Layout>
+          <div className="container mx-auto px-6 py-8">
+            <div className="animate-pulse">
+              {/* Header skeleton */}
+              <div className="flex justify-between items-center mb-8">
+                <div className="h-8 bg-gray-300 rounded w-48"></div>
+                <div className="flex gap-2">
+                  <div className="h-10 bg-gray-300 rounded w-24"></div>
+                  <div className="h-10 bg-gray-300 rounded w-24"></div>
+                </div>
+              </div>
+
+              {/* Overview cards skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-300 rounded-lg h-32"></div>
+                ))}
+              </div>
+
+              {/* Content skeleton */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-gray-300 rounded-lg h-96"></div>
+                <div className="space-y-6">
+                  <div className="bg-gray-300 rounded-lg h-48"></div>
+                  <div className="bg-gray-300 rounded-lg h-48"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Layout>
+      </AuthWrapper>
+    );
+  }
+
+  // Show error state
+  if (isError) {
+    return (
+      <AuthWrapper requireAuth={true}>
+        <Layout>
+          <div className="container mx-auto px-6 py-8">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <h2 className="text-red-800 text-xl font-semibold mb-2">
+                Failed to Load Portfolio
+              </h2>
+              <p className="text-red-600 mb-4">
+                {errorMessage ||
+                  "An error occurred while loading your portfolio data."}
+              </p>
+              <button
+                onClick={handleRefreshAll}
+                className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </Layout>
+      </AuthWrapper>
+    );
+  }
+
+  // Show empty state when not connected
+  if (!isConnected) {
+    return (
+      <AuthWrapper requireAuth={true}>
+        <Layout>
+          <div className="container mx-auto px-6 py-8">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+              <h2 className="text-blue-800 text-xl font-semibold mb-2">
+                Connect Your Wallet
+              </h2>
+              <p className="text-blue-600">
+                Please connect your wallet to view your portfolio.
+              </p>
+            </div>
+          </div>
+        </Layout>
+      </AuthWrapper>
+    );
+  }
 
   return (
     <AuthWrapper requireAuth={true}>
@@ -117,15 +238,15 @@ const PortfolioPage: React.FC = () => {
         <div className="container mx-auto px-6 py-8">
           {/* Portfolio Header */}
           <PortfolioHeader
-            isRefreshing={isRefreshing}
+            isRefreshing={isLoading}
             onRefresh={handleRefresh}
             onSettings={handleSettings}
           />
 
           {/* Portfolio Overview Cards */}
           <PortfolioOverviewCards
-            totalInvestmentValue={totalInvestmentValue}
-            totalPnL={totalPnL}
+            totalInvestmentValue={parseFloat(totalInvestmentValue)}
+            totalPnL={parseFloat(totalPnL)}
             assetCount={assetCount}
             className="mb-8"
           />
@@ -134,7 +255,7 @@ const PortfolioPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Individual Assets Section */}
             <IndividualAssetsSection
-              assets={mockPortfolioAssets}
+              assets={transformedAssets}
               onViewDetails={handleViewDetails}
             />
 
@@ -142,7 +263,7 @@ const PortfolioPage: React.FC = () => {
             <div className="space-y-6">
               {/* Mutual Fund Card */}
               <MutualFundCard
-                mutualFund={mockMutualFund}
+                mutualFund={transformedMutualFund}
                 onViewDetails={handleViewMutualFund}
               />
 
