@@ -3,15 +3,16 @@
 import type React from "react";
 import { useRouter } from "next/navigation";
 import { Layout } from "@/components/ui/Layout";
-
-import { TradingPageHeader } from "@/components/partials/Trading/TradingPageHeader";
 import { TopMovers } from "@/components/partials/Trading/TopMovers";
 import { CategoryFilter } from "@/components/partials/Trading/CategoryFilter";
 import { TradingTable } from "@/components/partials/Trading/TradingTable";
 import { useIntegratedTradingData } from "./hooks/useIntegratedTradingData";
-import { EmptyState } from "@/components/partials/Trading/EmptyState";
-import { LoadingState } from "@/components/partials/Trading/LoadingState";
-import { ErrorState } from "@/components/partials/Trading/ErrorState";
+import { PageHeader } from "@/components/ui/PageHeader/PageHeader";
+import { LoadingState } from "@/components/ui/States/LoadingState";
+import { ErrorState } from "@/components/ui/States/ErrorState";
+import { EmptyState } from "@/components/ui/States/EmptyState";
+import { ValueChange } from "@/components/ui/ValueChange/ValueChange";
+import { TableColumn } from "@/components/ui/DataTable/DataTable";
 
 const TradingPage: React.FC = () => {
   const router = useRouter();
@@ -33,25 +34,62 @@ const TradingPage: React.FC = () => {
     refreshData,
   } = useIntegratedTradingData();
 
-  // Handle asset click - navigate to detail page
   const handleAssetClick = (symbol: string) => {
     router.push(`/trading/${symbol}`);
   };
 
-  // Handle trade button click
   const handleTradeClick = (symbol: string) => {
     router.push(`/trading/${symbol}`);
   };
 
+  const columns: TableColumn[] = [
+    {
+      key: "name",
+      label: "Asset",
+      sortable: true,
+      render: (value, item) => (
+        <div className="flex items-center">
+          <img src={item.icon} className="w-8 h-8 mr-2" />
+          <div>
+            <div className="font-medium">{item.name}</div>
+            <div className="text-sm text-gray-400">{item.symbol}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "price",
+      label: "Price",
+      align: "right",
+      sortable: true,
+    },
+    {
+      key: "change24h",
+      label: "24h Change",
+      align: "right",
+      sortable: true,
+      render: (value: number) => <ValueChange value={value} />,
+    },
+  ];
+
   return (
     <Layout>
       <div className="container mx-auto px-6 py-8">
-        {/* Header Section */}
-        <TradingPageHeader
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          totalAssets={totalAssets}
-          isLoading={isLoading}
+        <PageHeader
+          title="Trading Hub - All Assets"
+          subtitle="Trade crypto, stocks, commodities, and tokenized assets"
+          search={{
+            placeholder: "Search assets on URIP",
+            value: searchTerm,
+            onChange: setSearchTerm,
+          }}
+          stats={[
+            {
+              label: "Assets available",
+              value: totalAssets,
+              loading: isLoading,
+            },
+          ]}
         />
 
         {/* Loading State */}
@@ -61,7 +99,15 @@ const TradingPage: React.FC = () => {
 
         {/* Error State */}
         {error && !isLoading && (
-          <ErrorState error={error} onRetry={refreshData} />
+          <ErrorState
+            message={error}
+            actions={[
+              {
+                label: "Try again",
+                onClick: refreshData,
+              },
+            ]}
+          />
         )}
 
         {/* Main Content - Only show when data is loaded and no error */}
@@ -95,7 +141,6 @@ const TradingPage: React.FC = () => {
             ) : allAssets.length > 0 ? (
               // Show filtered empty state when assets exist but filter results are empty
               <EmptyState
-                type={searchTerm ? "search" : "category"}
                 title={
                   searchTerm ? "No assets found" : "No assets in this category"
                 }
@@ -106,9 +151,7 @@ const TradingPage: React.FC = () => {
                 }
               />
             ) : (
-              // Show general empty state when no assets at all
               <EmptyState
-                type="general"
                 title="No supported assets"
                 description="No assets are currently available for trading. Please check back later."
               />

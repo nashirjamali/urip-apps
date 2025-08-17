@@ -1,72 +1,214 @@
-// components/trading/TopMovers.tsx
 "use client";
 
 import type React from "react";
-import { GlassCard } from "@/components/revamp/ui/GlassCard";
-import { PriceChange } from "./PriceChange";
+import { useState } from "react";
+import { TopItems, TopItem } from "@/components/ui/TopItems/TopItems";
+import { CategoryFilter } from "@/components/ui/CategoryFilter/CategoryFilter";
 import type { TradingAsset } from "@/types/trading";
+import { cn } from "@/lib/utils";
+
+export type TopMoversMode =
+  | "movers"
+  | "gainers"
+  | "losers"
+  | "volume"
+  | "marketCap";
 
 interface TopMoversProps {
   assets: TradingAsset[];
   onAssetClick: (symbol: string) => void;
   className?: string;
+  mode?: TopMoversMode;
+  showModeSelector?: boolean;
+  showCategoryFilter?: boolean;
+  maxItems?: number;
+  columns?: 2 | 3 | 4 | 6;
+  theme?: "light" | "dark";
+  size?: "sm" | "md" | "lg";
 }
+
+interface ModeConfig {
+  title: string;
+  icon: string;
+  sortFn: (assets: TradingAsset[]) => TradingAsset[];
+  description?: string;
+}
+
+const MODE_CONFIGS: Record<TopMoversMode, ModeConfig> = {
+  movers: {
+    title: "Top Movers (24h)",
+    icon: "🔥",
+    sortFn: (assets) =>
+      [...assets].sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h)),
+    description: "Assets with the biggest price movements",
+  },
+  gainers: {
+    title: "Top Gainers (24h)",
+    icon: "📈",
+    sortFn: (assets) =>
+      [...assets]
+        .sort((a, b) => b.change24h - a.change24h)
+        .filter((a) => a.change24h > 0),
+    description: "Best performing assets today",
+  },
+  losers: {
+    title: "Top Losers (24h)",
+    icon: "📉",
+    sortFn: (assets) =>
+      [...assets]
+        .sort((a, b) => a.change24h - b.change24h)
+        .filter((a) => a.change24h < 0),
+    description: "Worst performing assets today",
+  },
+  volume: {
+    title: "Most Active",
+    icon: "⚡",
+    sortFn: (assets) =>
+      [...assets].sort((a, b) => b.priceNumber - a.priceNumber), // Mock volume sort by price
+    description: "Highest trading volume",
+  },
+  marketCap: {
+    title: "Largest by Market Cap",
+    icon: "🏆",
+    sortFn: (assets) =>
+      [...assets].sort((a, b) => b.marketCapNumber - a.marketCapNumber),
+    description: "Biggest market capitalizations",
+  },
+};
 
 export const TopMovers: React.FC<TopMoversProps> = ({
   assets,
   onAssetClick,
   className = "",
+  mode = "movers",
+  showModeSelector = false,
+  showCategoryFilter = false,
+  maxItems = 6,
+  columns = 6,
+  theme = "dark",
+  size = "md",
 }) => {
-  // Get top 6 movers based on 24h change
-  const topMovers = [...assets]
-    .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))
-    .slice(0, 6);
+  const [selectedMode, setSelectedMode] = useState<TopMoversMode>(mode);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  // Get unique categories from assets
+  const availableCategories = Array.from(
+    new Set(assets.map((asset) => asset.category))
+  ).map((categoryName) => ({
+    id: categoryName.toLowerCase().replace(/\s+/g, "-"),
+    name: categoryName,
+    icon: getCategoryIcon(categoryName),
+  }));
+
+  // Filter assets by category
+  const categoryFilteredAssets =
+    selectedCategory === "all"
+      ? assets
+      : assets.filter(
+          (asset) =>
+            asset.category.toLowerCase().replace(/\s+/g, "-") ===
+            selectedCategory
+        );
+
+  // Apply sorting based on selected mode
+  const config = MODE_CONFIGS[selectedMode];
+  const sortedAssets = config.sortFn(categoryFilteredAssets).slice(0, maxItems);
+
+  // Transform trading assets to TopItems format
+  const topItems: TopItem[] = sortedAssets.map((asset) => ({
+    id: asset.id,
+    title: asset.symbol,
+    subtitle: asset.name,
+    value: asset.price,
+    change: asset.change24h,
+    image: asset.assetIcon,
+    color: asset.color,
+    onClick: () => onAssetClick(asset.symbol),
+  }));
+
+  function getCategoryIcon(categoryName: string): string {
+    switch (categoryName.toLowerCase()) {
+      case "technology stock":
+        return "💻";
+      case "cryptocurrency":
+        return "🪙";
+      case "precious metal":
+        return "🥇";
+      default:
+        return "📊";
+    }
+  }
+
+  const handleModeChange = (newMode: TopMoversMode) => {
+    setSelectedMode(newMode);
+  };
 
   return (
-    <div className={`mb-8 ${className}`}>
-      <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-        🔥 Top Movers (24 Hours)
-      </h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {topMovers.map((asset) => (
-          <div
-            key={asset.id}
-            className="cursor-pointer hover:scale-105 transition-all duration-200 group"
-            onClick={() => onAssetClick(asset.symbol)}
-          >
-            <GlassCard
-              theme="dark"
-              variant="default"
-              className="p-4 text-center group-hover:bg-[#F77A0E]/10 group-hover:border group-hover:border-[#F77A0E]/50 transition-all duration-200"
-            >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 overflow-hidden bg-white/10 group-hover:bg-[#F77A0E]/20 group-hover:scale-110 transition-all duration-200">
-                <img
-                  src={asset.assetIcon}
-                  alt={asset.name}
-                  className="w-8 h-8 object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                    target.nextElementSibling!.textContent =
-                      asset.symbol.charAt(0);
-                    (target.nextElementSibling as HTMLElement).classList.remove(
-                      "hidden"
-                    );
-                  }}
-                />
-                <span className="hidden text-white font-bold text-sm"></span>
-              </div>
-              <h3 className="font-semibold text-white text-sm group-hover:text-[#F77A0E] transition-colors duration-200">
-                {asset.symbol}
-              </h3>
-              <p className="text-xs text-gray-400 mb-2 group-hover:text-gray-300 transition-colors duration-200">
-                {asset.price}
-              </p>
-              <PriceChange value={asset.change24h} showIcon={false} />
-            </GlassCard>
+    <div className={cn("mb-8", className)}>
+      {/* Mode Selector */}
+      {showModeSelector && (
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(MODE_CONFIGS).map(([modeKey, modeConfig]) => (
+              <button
+                key={modeKey}
+                onClick={() => handleModeChange(modeKey as TopMoversMode)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
+                  selectedMode === modeKey
+                    ? "bg-[#F77A0E] text-white shadow-lg"
+                    : theme === "dark"
+                    ? "bg-white/10 text-gray-300 hover:bg-white/20 border border-white/20"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200"
+                )}
+              >
+                <span className="mr-1">{modeConfig.icon}</span>
+                {modeConfig.title.replace(" (24h)", "")}
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Category Filter */}
+      {showCategoryFilter && availableCategories.length > 1 && (
+        <div className="mb-4">
+          <CategoryFilter
+            categories={availableCategories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            showAll={true}
+            allLabel="All Categories"
+            allIcon="🌟"
+            theme={theme}
+            size="sm"
+          />
+        </div>
+      )}
+
+      {/* Top Items Display */}
+      <TopItems
+        title={`${config.icon} ${config.title}`}
+        items={topItems}
+        columns={columns}
+        onItemClick={(item) => onAssetClick(item.title)} // item.title is the symbol
+        theme={theme}
+        size={size}
+        showChange={true}
+        className={className}
+      />
+
+      {/* Description */}
+      {config.description && (
+        <p
+          className={cn(
+            "text-sm mt-2",
+            theme === "dark" ? "text-gray-400" : "text-gray-600"
+          )}
+        >
+          {config.description}
+        </p>
+      )}
     </div>
   );
 };
