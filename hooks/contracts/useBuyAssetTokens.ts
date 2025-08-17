@@ -482,7 +482,7 @@ export const useBuyAssetTokens = (
       setError(null);
 
       try {
-        await writeContract({
+        writeContract({
           address: USDT_ADDRESS,
           abi: USDT_ABI,
           functionName: "approve",
@@ -531,7 +531,7 @@ export const useBuyAssetTokens = (
 
       try {
         // Call PurchaseManager.purchaseAssetToken with exact parameters from ABI
-        await writeContract({
+        writeContract({
           address: PURCHASE_MANAGER_ADDRESS,
           abi: PURCHASE_MANAGER_ABI,
           functionName: "purchaseAssetToken",

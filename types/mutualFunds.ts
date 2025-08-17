@@ -53,5 +53,5 @@ export interface UseMutualFundInfoReturn {
   // Actions
   refreshFund: () => Promise<void>;
   refreshAllocations: () => Promise<void>;
-  refreshAll: () => Promise<void>;
+  refreshAll: () => void;
 }

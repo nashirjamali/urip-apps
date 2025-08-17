@@ -10,7 +10,7 @@ import {
   UserInvestmentData,
 } from "@/types";
 import { useSupportedAssets } from "./useSupportedAssets";
-import { useMutualFundInfo } from "./useMutualFundInfo";
+// import { useMutualFundInfo } from "./useMutualFundInfo";
 
 import URIP_TOKEN_ABI from "@/contracts/abis/URIPToken.json";
 import ASSET_TOKEN_ABI from "@/contracts/abis/AssetToken.json";
@@ -40,13 +40,13 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
   const { assetsList, isLoadingList, listError, refreshList } =
     useSupportedAssets();
 
-  const {
-    mutualFundInfo,
-    assetAllocations,
-    isLoadingFund,
-    fundError,
-    refreshAll: refreshMutualFund,
-  } = useMutualFundInfo();
+  // const {
+  //   mutualFundInfo,
+  //   assetAllocations,
+  //   isLoadingFund,
+  //   fundError,
+  //   refreshAll: refreshMutualFund,
+  // } = useMutualFundInfo();
 
   // URIP Fund contract reads
   const {
@@ -500,14 +500,14 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
     ]);
     await loadPortfolioData();
   }, [
-    refetchURIPBalance,
-    refetchInvestmentInfo,
-    refetchFundStats,
-    refetchNAV,
-    refetchAssetBalances,
+    // refetchURIPBalance,
+    // refetchInvestmentInfo,
+    // refetchFundStats,
+    // refetchNAV,
+    // refetchAssetBalances,
     // refreshMutualFund,
-    refreshList,
-    loadPortfolioData,
+    // refreshList,
+    // loadPortfolioData,
   ]);
 
   // Load data on mount and when dependencies change
@@ -528,7 +528,7 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
   const combinedIsLoading =
     isLoading ||
     isLoadingList ||
-    isLoadingFund ||
+    // isLoadingFund ||
     isLoadingURIPBalance ||
     isLoadingInvestmentInfo ||
     isLoadingFundStats ||
@@ -539,7 +539,7 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
   const combinedIsError =
     isError ||
     !!listError ||
-    !!fundError ||
+    // !!fundError ||
     !!uripBalanceError ||
     !!investmentInfoError ||
     !!fundStatsError ||
@@ -549,7 +549,7 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
   const combinedErrorMessage =
     errorMessage ||
     listError ||
-    fundError ||
+    // fundError ||
     uripBalanceError?.message ||
     investmentInfoError?.message ||
     fundStatsError?.message ||

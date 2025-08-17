@@ -37,20 +37,6 @@ export interface PortfolioData {
   assetCount: number;
 }
 
-export interface AssetAllocation {
-  name: string;
-  symbol: string;
-  percentage: number;
-  icon: string;
-  detail: string;
-}
-
-export interface Voter {
-  address: string;
-  reason: string;
-  vote: "Agree" | "Against";
-}
-
 export interface VoteModalState {
   show: boolean;
   type: "agree" | "against" | null;
@@ -59,7 +45,7 @@ export interface VoteModalState {
 export type StatusFilter = "All" | "Active" | "Executed";
 export type UserVotes = { [key: string]: "agree" | "against" | null };
 
-export interface AssetAllocation {
+export interface AssetAllocationDAO {
   name: string;
   symbol: string;
   percentage: number;
@@ -82,7 +68,7 @@ export interface DAO {
   countParticipation: number;
   status: "Active" | "Executed" | "Pending" | "Cancelled";
   description: string;
-  assetAllocation: AssetAllocation[];
+  assetAllocation: AssetAllocationDAO[];
   voters?: Voter[];
   proposer?: Address;
   startTime?: number;

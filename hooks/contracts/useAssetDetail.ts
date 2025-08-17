@@ -288,10 +288,7 @@ export const useAssetDetail = (symbol: string): UseAssetDetailReturn => {
   // Refresh all asset data
   const refreshAssetData = async () => {
     await Promise.all([
-      refreshList(),
       refreshPortfolio(),
-      buyHook.refreshBalances(),
-      sellHook.refreshBalances(),
     ]);
   };
 

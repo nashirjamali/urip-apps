@@ -2,7 +2,6 @@
 
 import type React from "react";
 import { useState, useEffect, useCallback, useRef } from "react";
-
 import {
   TrendingUp,
   TrendingDown,
@@ -103,44 +102,11 @@ export const TradePanel: React.FC<TradePanelProps> = ({
       setPendingTradeData(null);
       onTradeComplete?.();
 
-      // Auto refresh balances after trade
       setTimeout(() => {
         refreshBalances();
       }, 2000);
     }
-  }, [
-    isConfirmed,
-    transactionHash,
-    lastProcessedConfirmation,
-    onTradeComplete,
-    refreshBalances,
-  ]);
-
-  useEffect(() => {
-    if (
-      isConfirmed &&
-      transactionHash &&
-      lastProcessedConfirmation !== transactionHash
-    ) {
-      setLastProcessedConfirmation(transactionHash);
-
-      setUsdAmount("");
-      setQtyAmount("");
-      setTradeStep("idle");
-      setPendingTradeData(null);
-      onTradeComplete?.();
-
-      setTimeout(() => {
-        refreshBalances();
-      }, 2000);
-    }
-  }, [
-    isConfirmed,
-    transactionHash,
-    lastProcessedConfirmation,
-    onTradeComplete,
-    refreshBalances,
-  ]);
+  }, [isConfirmed]);
 
   useEffect(() => {
     const handleSeamlessFlow = async () => {

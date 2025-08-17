@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Address } from "viem";
 import { useBuyAssetTokens } from "./useBuyAssetTokens";
 import { useSellAssetTokens } from "./useSellAssetTokens";
@@ -8,13 +8,11 @@ import { useUserPortfolio } from "./useUserPortfolio";
 import type { AssetTradeParams, AssetSaleParams } from "@/types/assetTrading";
 
 export interface UseAssetTradingReturn {
-  // Balance and allowance data
   usdtBalance: string;
   usdtAllowance: string;
   assetTokenBalance: string;
   assetTokenPrice: string;
 
-  // Asset information
   assetTokenInfo: {
     name: string;
     symbol: string;
@@ -22,29 +20,24 @@ export interface UseAssetTradingReturn {
     isActive: boolean;
   } | null;
 
-  // Transaction states
   isTransactionPending: boolean;
   isConfirmed: boolean;
   transactionHash: `0x${string}` | undefined;
   error: Error | null;
   loading: boolean;
 
-  // Validation functions
   hasEnoughUSDTBalance: (amount: string) => boolean;
   hasEnoughUSDTAllowance: (amount: string) => boolean;
   hasEnoughAssetTokens: (amount: string) => boolean;
   isAssetTokenSupported: boolean;
 
-  // Transaction functions
   approveUSDT: (amount: string) => Promise<void>;
   buyAssetTokens: (params: AssetTradeParams) => Promise<void>;
   sellAssetTokens: (params: AssetSaleParams) => Promise<void>;
 
-  // Utility functions
   refreshBalances: () => void;
   resetTransaction: () => void;
 
-  // User holdings
   userHoldings: Array<{
     symbol: string;
     name: string;
@@ -54,16 +47,21 @@ export interface UseAssetTradingReturn {
     icon?: string;
   }>;
   isHoldingsLoading: boolean;
+  isRefreshing: boolean;
 }
 
-/**
- * Comprehensive hook for asset trading functionality
- * Combines buy/sell hooks with portfolio data
- */
 export const useAssetTrading = (
   assetTokenAddress?: Address
 ): UseAssetTradingReturn => {
-  // Contract hooks
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRefreshRef = useRef<number>(0);
+  const refreshQueueRef = useRef<boolean>(false);
+
+  const REFRESH_THROTTLE_MS = 3000;
+  const BATCH_DELAY_MS = 500;
+
   const buyHook = useBuyAssetTokens(assetTokenAddress);
   const sellHook = useSellAssetTokens(assetTokenAddress);
   const {
@@ -72,7 +70,6 @@ export const useAssetTrading = (
     refreshAll: refreshPortfolio,
   } = useUserPortfolio();
 
-  // Transform portfolio holdings to UI format
   const userHoldings = useMemo(() => {
     if (!portfolioData?.directAssets) return [];
 
@@ -90,7 +87,6 @@ export const useAssetTrading = (
       }));
   }, [portfolioData?.directAssets]);
 
-  // Combined transaction state
   const isTransactionPending =
     buyHook.isTransactionPending || sellHook.isTransactionPending;
   const isConfirmed = buyHook.isConfirmed || sellHook.isConfirmed;
@@ -98,77 +94,146 @@ export const useAssetTrading = (
   const error = buyHook.error || sellHook.error;
   const loading = buyHook.loading || sellHook.loading;
 
-  // Asset token info (prioritize buy hook data, fallback to sell hook)
   const assetTokenInfo = buyHook.assetTokenInfo || sellHook.assetTokenInfo;
   const isAssetTokenSupported =
     buyHook.isAssetTokenSupported && sellHook.isAssetTokenSupported;
 
-  // Enhanced refresh function
-  const refreshBalances = useCallback(() => {
-    buyHook.refreshBalances();
-    sellHook.refreshBalances();
-    refreshPortfolio();
-  }, [buyHook, sellHook, refreshPortfolio]);
+  const executeRefreshSequence = useCallback(async () => {
+    if (isRefreshing) {
+      return;
+    }
 
-  // Enhanced reset function
+    setIsRefreshing(true);
+
+    try {
+      await buyHook.refreshBalances();
+      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+      await sellHook.refreshBalances();
+      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+      await refreshPortfolio();
+    } catch (error) {
+      console.error("Error in refresh sequence:", error);
+    } finally {
+      setIsRefreshing(false);
+
+      if (refreshQueueRef.current) {
+        refreshQueueRef.current = false;
+        setTimeout(() => {
+          executeRefreshSequence();
+        }, REFRESH_THROTTLE_MS);
+      }
+    }
+  }, [buyHook, sellHook, refreshPortfolio, isRefreshing]);
+
+  const refreshBalances = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshRef.current;
+
+    if (isRefreshing) {
+      refreshQueueRef.current = true;
+      return;
+    }
+
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+    }
+
+    if (timeSinceLastRefresh < REFRESH_THROTTLE_MS) {
+      const remainingTime = REFRESH_THROTTLE_MS - timeSinceLastRefresh;
+
+      refreshTimeoutRef.current = setTimeout(() => {
+        refreshBalances();
+      }, remainingTime);
+      return;
+    }
+
+    lastRefreshRef.current = now;
+    executeRefreshSequence();
+  }, [executeRefreshSequence, isRefreshing]);
+
   const resetTransaction = useCallback(() => {
     buyHook.resetTransaction();
     sellHook.resetTransaction();
   }, [buyHook, sellHook]);
 
-  // Trading functions with automatic refresh
   const buyAssetTokensWithRefresh = useCallback(
     async (params: AssetTradeParams) => {
-      await buyHook.buyAssetTokens(params);
-      // Refresh data after successful transaction
-      // setTimeout(refreshBalances, 2000); // Small delay to allow blockchain state to update
+      try {
+        await buyHook.buyAssetTokens(params);
+      } catch (error) {
+        throw error;
+      }
     },
-    [buyHook, refreshBalances]
+    [buyHook]
   );
 
   const sellAssetTokensWithRefresh = useCallback(
     async (params: AssetSaleParams) => {
-      await sellHook.sellAssetTokens(params);
-      // Refresh data after successful transaction
-      // setTimeout(refreshBalances, 2000); // Small delay to allow blockchain state to update
+      try {
+        await sellHook.sellAssetTokens(params);
+      } catch (error) {
+        throw error;
+      }
     },
-    [sellHook, refreshBalances]
+    [sellHook]
   );
 
+  const previousIsConfirmed = useRef(isConfirmed);
+  const previousTransactionHash = useRef(transactionHash);
+
+  useEffect(() => {
+    if (
+      isConfirmed &&
+      transactionHash &&
+      (!previousIsConfirmed.current ||
+        previousTransactionHash.current !== transactionHash)
+    ) {
+      setTimeout(() => {
+        refreshBalances();
+      }, 2000);
+    }
+
+    previousIsConfirmed.current = isConfirmed;
+    previousTransactionHash.current = transactionHash;
+  }, [isConfirmed, transactionHash, refreshBalances]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return {
-    // Balance and allowance data
     usdtBalance: buyHook.usdtBalance,
     usdtAllowance: buyHook.usdtAllowance,
     assetTokenBalance: sellHook.assetTokenBalance,
     assetTokenPrice: buyHook.assetTokenPrice || sellHook.assetTokenPrice,
 
-    // Asset information
     assetTokenInfo,
 
-    // Transaction states
     isTransactionPending,
     isConfirmed,
     transactionHash,
     error,
-    loading,
+    loading: loading || isRefreshing,
 
-    // Validation functions
     hasEnoughUSDTBalance: buyHook.hasEnoughUSDTBalance,
     hasEnoughUSDTAllowance: buyHook.hasEnoughUSDTAllowance,
     hasEnoughAssetTokens: sellHook.hasEnoughAssetTokens,
     isAssetTokenSupported,
 
-    // Transaction functions
     approveUSDT: buyHook.approveUSDT,
     buyAssetTokens: buyAssetTokensWithRefresh,
     sellAssetTokens: sellAssetTokensWithRefresh,
 
-    // Utility functions
     refreshBalances,
     resetTransaction,
 
-    // User holdings
     userHoldings,
     isHoldingsLoading,
+    isRefreshing,
   };
 };
