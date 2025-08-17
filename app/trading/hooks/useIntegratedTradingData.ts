@@ -86,10 +86,10 @@ const generateMockMarketCap = (
 
   const marketCapNumber = multiplier;
   const formatNumber = (num: number): string => {
-    if (num >= 1e12) return `Rp ${(num / 1e12).toFixed(1)} Trilliun`;
-    if (num >= 1e9) return `Rp ${(num / 1e9).toFixed(1)} Miliar`;
-    if (num >= 1e6) return `Rp ${(num / 1e6).toFixed(1)} Juta`;
-    return `Rp ${num.toLocaleString()}`;
+    if (num >= 1e12) return `$${(num / 1e12).toFixed(1)} Trilliun`;
+    if (num >= 1e9) return `$${(num / 1e9).toFixed(1)} Miliar`;
+    if (num >= 1e6) return `$${(num / 1e6).toFixed(1)} Juta`;
+    return `$${num.toLocaleString()}`;
   };
 
   return {

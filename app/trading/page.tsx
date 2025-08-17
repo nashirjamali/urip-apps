@@ -35,15 +35,12 @@ const TradingPage: React.FC = () => {
 
   // Handle asset click - navigate to detail page
   const handleAssetClick = (symbol: string) => {
-    // Remove 't' prefix if exists for clean URL
-    const cleanSymbol = symbol.startsWith("t") ? symbol.substring(1) : symbol;
-    router.push(`/revamp/trading/${cleanSymbol}`);
+    router.push(`/trading/${symbol}`);
   };
 
   // Handle trade button click
   const handleTradeClick = (symbol: string) => {
-    const cleanSymbol = symbol.startsWith("t") ? symbol.substring(1) : symbol;
-    router.push(`/revamp/trading/${cleanSymbol}`);
+    router.push(`/trading/${symbol}`);
   };
 
   return (

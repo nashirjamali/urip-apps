@@ -67,9 +67,10 @@ export interface UseSellAssetTokensReturn {
 export const useSellAssetTokens = (
   assetTokenAddress?: Address
 ): UseSellAssetTokensReturn => {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const config = useConfig();
   const [isTransactionPending, setIsTransactionPending] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // State for manually managed contract data
   const [usdtBalance, setUsdtBalance] = useState<bigint | undefined>();
@@ -111,9 +112,14 @@ export const useSellAssetTokens = (
     hash,
   });
 
+  // Handle mounting state
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Function to read all contract data
   const fetchContractData = useCallback(async () => {
-    if (!address || !config) return;
+    if (!address || !config || !isMounted || !isConnected) return;
 
     setLoading(true);
     setError(null);
@@ -182,7 +188,7 @@ export const useSellAssetTokens = (
           readContract(config, {
             address: PURCHASE_MANAGER_ADDRESS,
             abi: PURCHASE_MANAGER_ABI,
-            functionName: "isAssetTokenSupported",
+            functionName: "supportedAssetTokens",
             args: [assetTokenAddress],
           }),
         ]);
@@ -196,21 +202,25 @@ export const useSellAssetTokens = (
         setIsAssetSupported(isAssetSupportedResult as boolean);
       }
     } catch (err) {
-      setError(err as Error);
-      console.error("Error fetching contract data:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
+      console.error("Error fetching contract data:", errorMessage);
+      setError(new Error(errorMessage));
     } finally {
       setLoading(false);
     }
-  }, [address, assetTokenAddress, config]);
+  }, [address, assetTokenAddress, config, isMounted, isConnected]);
 
   // Fetch data on mount and when dependencies change
   useEffect(() => {
-    fetchContractData();
-  }, [fetchContractData]);
+    if (isMounted && isConnected) {
+      fetchContractData();
+    }
+  }, [fetchContractData, isMounted, isConnected]);
 
-  // Refetch functions
+  // Refetch functions with error handling
   const refetchUSDTBalance = useCallback(async () => {
-    if (!address || !config) return;
+    if (!address || !config || !isMounted || !isConnected) return;
     try {
       const balance = await readContract(config, {
         address: USDT_ADDRESS,
@@ -222,10 +232,11 @@ export const useSellAssetTokens = (
     } catch (err) {
       console.error("Error refetching USDT balance:", err);
     }
-  }, [address, config]);
+  }, [address, config, isMounted, isConnected]);
 
   const refetchAssetBalance = useCallback(async () => {
-    if (!address || !config || !assetTokenAddress) return;
+    if (!address || !config || !assetTokenAddress || !isMounted || !isConnected)
+      return;
     try {
       const balance = await readContract(config, {
         address: assetTokenAddress,
@@ -237,48 +248,64 @@ export const useSellAssetTokens = (
     } catch (err) {
       console.error("Error refetching asset balance:", err);
     }
-  }, [address, config, assetTokenAddress]);
+  }, [address, config, assetTokenAddress, isMounted, isConnected]);
 
-  // Format balance data
+  // Format balance data with safe fallbacks
   const formattedUSDTBalance = useMemo(() => {
-    if (!usdtBalance || !usdtDecimals) return "0";
-    return formatUnits(usdtBalance, usdtDecimals);
+    if (!usdtBalance || !usdtDecimals) return "0.00";
+    try {
+      return formatUnits(usdtBalance, usdtDecimals);
+    } catch {
+      return "0.00";
+    }
   }, [usdtBalance, usdtDecimals]);
 
   const formattedAssetBalance = useMemo(() => {
-    if (!assetTokenBalance || !assetTokenDecimals) return "0";
-    return formatUnits(assetTokenBalance, assetTokenDecimals);
+    if (!assetTokenBalance || !assetTokenDecimals) return "0.00";
+    try {
+      return formatUnits(assetTokenBalance, assetTokenDecimals);
+    } catch {
+      return "0.00";
+    }
   }, [assetTokenBalance, assetTokenDecimals]);
 
   const formattedAssetPrice = useMemo(() => {
-    if (!assetTokenPriceData) return "0";
-    const [priceRaw] = assetTokenPriceData;
-    return formatUnits(priceRaw, 8); // Asset prices have 8 decimals
+    if (!assetTokenPriceData) return "0.00";
+    try {
+      const [priceRaw] = assetTokenPriceData;
+      return formatUnits(priceRaw, 8); // Asset prices have 8 decimals
+    } catch {
+      return "0.00";
+    }
   }, [assetTokenPriceData]);
 
   const assetTokenInfo = useMemo(() => {
     if (!assetTokenName || !assetTokenSymbol || !assetInfoData) return null;
 
-    const [, assetType, , , isActive] = assetInfoData as [
-      string,
-      string,
-      bigint,
-      bigint,
-      boolean
-    ];
+    try {
+      const [, assetType, , , isActive] = assetInfoData as [
+        string,
+        string,
+        bigint,
+        bigint,
+        boolean
+      ];
 
-    return {
-      name: assetTokenName as string,
-      symbol: assetTokenSymbol as string,
-      assetType: assetType as string,
-      isActive: isActive as boolean,
-    };
+      return {
+        name: assetTokenName as string,
+        symbol: assetTokenSymbol as string,
+        assetType: assetType as string,
+        isActive: isActive as boolean,
+      };
+    } catch {
+      return null;
+    }
   }, [assetTokenName, assetTokenSymbol, assetInfoData]);
 
   // Validation functions
   const hasEnoughAssetTokens = useCallback(
     (amount: string): boolean => {
-      if (!assetTokenBalance || !assetTokenDecimals) return false;
+      if (!assetTokenBalance || !assetTokenDecimals || !amount) return false;
       try {
         const amountBigInt = parseUnits(amount, assetTokenDecimals);
         return assetTokenBalance >= amountBigInt;
@@ -296,7 +323,8 @@ export const useSellAssetTokens = (
         !config ||
         !assetTokenAddress ||
         !assetTokenDecimals ||
-        !usdtDecimals
+        !usdtDecimals ||
+        !isMounted
       ) {
         throw new Error("Missing required data for estimation");
       }
@@ -317,7 +345,6 @@ export const useSellAssetTokens = (
         );
 
         // Calculate fee (you may need to adjust this based on your contract's fee structure)
-        // This example assumes a 0.5% fee, but you should get this from your contract
         const feePercentage = 0.005; // 0.5%
         const feeAmount = (
           parseFloat(estimatedValueFormatted) * feePercentage
@@ -329,28 +356,33 @@ export const useSellAssetTokens = (
         ).toString();
 
         return {
-          estimatedTokens: tokenAmount, // The tokens being sold
-          estimatedValue: estimatedValueFormatted, // Total USD value before fees
-          fee: feeAmount, // Fee amount in USD
-          netAmount: netAmount, // Net USD amount after fees
+          estimatedTokens: tokenAmount,
+          estimatedValue: estimatedValueFormatted,
+          fee: feeAmount,
+          netAmount: netAmount,
         };
       } catch (error) {
         console.error("Error estimating sell value:", error);
         throw error;
       }
     },
-    [config, assetTokenAddress, assetTokenDecimals, usdtDecimals]
+    [config, assetTokenAddress, assetTokenDecimals, usdtDecimals, isMounted]
   );
 
   // Transaction functions
   const sellAssetTokens = useCallback(
     async (params: AssetSaleParams) => {
-      if (!address || !assetTokenDecimals)
-        throw new Error("Missing required data");
-      if (!hasEnoughAssetTokens(params.tokenAmount || "0"))
+      if (!address || !assetTokenDecimals || !isMounted || !isConnected) {
+        throw new Error("Missing required data or wallet not connected");
+      }
+
+      if (!hasEnoughAssetTokens(params.tokenAmount || "0")) {
         throw new Error("Insufficient asset tokens");
+      }
 
       setIsTransactionPending(true);
+      setError(null);
+
       try {
         const tokenAmountBigInt = parseUnits(
           params.tokenAmount || "0",
@@ -364,34 +396,77 @@ export const useSellAssetTokens = (
         });
       } catch (error) {
         setIsTransactionPending(false);
+        const errorMessage =
+          error instanceof Error ? error.message : "Transaction failed";
+        setError(new Error(errorMessage));
         throw error;
       }
     },
-    [address, assetTokenDecimals, writeContract, hasEnoughAssetTokens]
+    [
+      address,
+      assetTokenDecimals,
+      writeContract,
+      hasEnoughAssetTokens,
+      isMounted,
+      isConnected,
+    ]
   );
 
   // Utility functions
   const refreshBalances = useCallback(() => {
-    refetchUSDTBalance();
-    refetchAssetBalance();
-  }, [refetchUSDTBalance, refetchAssetBalance]);
+    if (isMounted && isConnected) {
+      refetchUSDTBalance();
+      refetchAssetBalance();
+    }
+  }, [refetchUSDTBalance, refetchAssetBalance, isMounted, isConnected]);
 
   const resetTransaction = useCallback(() => {
     setIsTransactionPending(false);
+    setError(null);
   }, []);
 
   // Handle transaction completion
   const handleTransactionComplete = useCallback(() => {
     setIsTransactionPending(false);
-    refreshBalances();
+    // Refresh balances after a delay to ensure blockchain state is updated
+    setTimeout(() => {
+      refreshBalances();
+    }, 2000);
   }, [refreshBalances]);
 
   // Auto refresh balances on transaction confirmation
   useEffect(() => {
-    if (isConfirmed) {
+    if (isConfirmed && isMounted) {
       handleTransactionComplete();
     }
-  }, [isConfirmed, handleTransactionComplete]);
+  }, [isConfirmed, handleTransactionComplete, isMounted]);
+
+  // Return default values if not mounted yet
+  if (!isMounted) {
+    return {
+      loading: false,
+      error: null,
+      usdtBalance: "0.00",
+      assetTokenBalance: "0.00",
+      assetTokenPrice: "0.00",
+      assetTokenInfo: null,
+      isTransactionPending: false,
+      isConfirmed: false,
+      hasEnoughAssetTokens: () => false,
+      isAssetTokenSupported: false,
+      estimateSellValue: async () => ({
+        estimatedTokens: "0",
+        estimatedValue: "0",
+        fee: "0",
+        netAmount: "0",
+      }),
+      sellAssetTokens: async () => {
+        throw new Error("Component not mounted");
+      },
+      refreshBalances: () => {},
+      resetTransaction: () => {},
+    };
+  }
 
   return {
     // Loading and error states

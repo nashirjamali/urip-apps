@@ -23,10 +23,10 @@ export const useSmartContractPrice = ({
   mockMode = true // Default to mock mode for development
 }: UseSmartContractPriceProps) => {
   const [priceData, setPriceData] = useState<PriceData>({
-    price: 'Rp 0',
+    price: '$0',
     timestamp: Date.now(),
     change24h: 0,
-    volume24h: 'Rp 0',
+    volume24h: '$0',
     isLoading: true,
     error: null
   });
@@ -97,7 +97,7 @@ export const useSmartContractPrice = ({
           
           setPriceData(prev => ({
             ...prev,
-            price: `Rp ${parseFloat(price).toLocaleString('id-ID')}`,
+            price: `$${parseFloat(price).toLocaleString('id-ID')}`,
             timestamp: Date.now(),
             isLoading: false
           }));
@@ -129,7 +129,7 @@ export const useSmartContractPrice = ({
         
         setPriceData(prev => ({
           ...prev,
-          price: `Rp ${price.toLocaleString('id-ID')}`,
+          price: `$${price.toLocaleString('id-ID')}`,
           timestamp: Date.now(),
           isLoading: false
         }));
