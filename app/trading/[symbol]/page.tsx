@@ -1,326 +1,371 @@
 "use client";
 
 import type React from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AuthWrapper } from "@/components/revamp/auth/AuthWrapper";
-
-import { AssetDetailHeader } from "@/components/partials/Trading/AssetDetailHeader";
-import { PriceChartWidget } from "@/components/partials/Trading/PriceChartWidget";
-import { MarketInformationPanel } from "@/components/partials/Trading/MarketInformationPanel";
-import { StockDetailsPanel } from "@/components/partials/Trading/StockDetailsPanel";
-import { TradePanelWidget } from "@/components/partials/Trading/TradePanelWidget";
-import { HoldingsPanel } from "@/components/partials/Trading/HoldingsPanel";
-import { Layout } from "@/components/ui/Layout";
-
-import { useAssetDetail } from "@/hooks/contracts/useAssetDetail";
-import { useAssetTrading } from "@/hooks/contracts/useAssetTrading";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useAccount } from "wagmi";
+import { Layout } from "@/components/ui/Layout";
+import { LoadingState } from "@/components/ui/States/LoadingState";
+import { ErrorState } from "@/components/ui/States/ErrorState";
+import { EmptyState } from "@/components/ui/States/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader/PageHeader";
+import { LineChartWidget } from "@/components/partials/Trading/LineChartWidget";
+import { TradePanel } from "@/components/partials/Trading/TradePanel";
+import { AssetInfo } from "@/components/partials/Trading/AssetInfo";
+import { NewsSection } from "@/components/partials/Trading/NewsSection";
+import { MarketStats } from "@/components/partials/Trading/MarketStats";
+import { PerformanceSummary } from "@/components/partials/Trading/PerformanceSummary";
 
-// Loading and Error Components
-const LoadingSkeleton: React.FC = () => (
-  <div className="animate-pulse">
-    <div className="mb-6">
-      <div className="h-4 bg-gray-700 rounded w-32 mb-4"></div>
-      <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-gray-700 rounded-full"></div>
-          <div>
-            <div className="h-6 bg-gray-700 rounded w-32 mb-2"></div>
-            <div className="h-4 bg-gray-700 rounded w-24"></div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="h-8 bg-gray-700 rounded w-40 mb-2"></div>
-          <div className="h-4 bg-gray-700 rounded w-32"></div>
-        </div>
-      </div>
-    </div>
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div className="lg:col-span-3 space-y-6">
-        <div className="h-96 bg-gray-900/50 rounded-lg border border-white/10"></div>
-        <div className="h-40 bg-gray-900/50 rounded-lg border border-white/10"></div>
-        <div className="h-60 bg-gray-900/50 rounded-lg border border-white/10"></div>
-      </div>
-      <div className="space-y-6">
-        <div className="h-80 bg-gray-900/50 rounded-lg border border-white/10"></div>
-        <div className="h-40 bg-gray-900/50 rounded-lg border border-white/10"></div>
-      </div>
-    </div>
-  </div>
-);
+const mockTradingAssets = [
+  {
+    id: 1,
+    name: "Bitcoin",
+    symbol: "BTC",
+    price: "$1.906.551.118",
+    priceNumber: 1906551118,
+    change24h: -0.8,
+    change7d: 1.0,
+    change1m: -0.41,
+    change1y: 110.43,
+    marketCap: "$37.964 Trilliun",
+    marketCapNumber: 37964000000000,
+    icon: "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
+    color: "bg-orange-500",
+    category: "Cryptocurrency",
+    type: "CRYPTO",
+    description:
+      "Bitcoin is a decentralized digital currency that can be transferred on the peer-to-peer bitcoin network.",
+    volume24h: "$25.123 Trilliun",
+    high24h: "$1.950.000.000",
+    low24h: "$1.880.000.000",
+  },
+  {
+    id: 2,
+    name: "Ethereum",
+    symbol: "ETH",
+    price: "$123.456.789",
+    priceNumber: 123456789,
+    change24h: 3.21,
+    change7d: -2.45,
+    change1m: 12.34,
+    change1y: 345.67,
+    marketCap: "$14.567 Trilliun",
+    marketCapNumber: 14567000000000,
+    icon: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+    color: "bg-blue-600",
+    category: "Cryptocurrency",
+    type: "CRYPTO",
+    description:
+      "Ethereum is a decentralized platform that runs smart contracts and enables decentralized applications.",
+    volume24h: "$8.945 Trilliun",
+    high24h: "$130.000.000",
+    low24h: "$120.000.000",
+  },
+  {
+    id: 3,
+    name: "Apple Inc.",
+    symbol: "tAAPL",
+    price: "$3.456.789",
+    priceNumber: 3456789,
+    change24h: 2.45,
+    change7d: -1.23,
+    change1m: 15.67,
+    change1y: 234.56,
+    marketCap: "$52.123 Trilliun",
+    marketCapNumber: 52123000000000,
+    icon: "https://logo.clearbit.com/apple.com",
+    color: "bg-gray-800",
+    category: "Technology Stock",
+    type: "STOCK",
+    description:
+      "Apple Inc. is an American multinational technology company that designs, develops, and sells consumer electronics, computer software, and online services.",
+    volume24h: "$1.234 Trilliun",
+    high24h: "$3.500.000",
+    low24h: "$3.400.000",
+    sector: "Technology",
+    industry: "Consumer Electronics",
+    country: "United States",
+    exchange: "NASDAQ",
+    website: "https://www.apple.com",
+    employees: "164,000",
+    founded: "1976",
+    ceo: "Tim Cook",
+  },
+  {
+    id: 4,
+    name: "Microsoft Corp",
+    symbol: "MSFT",
+    price: "$6.789.012",
+    priceNumber: 6789012,
+    change24h: 1.25,
+    change7d: 3.45,
+    change1m: 8.9,
+    change1y: 189.34,
+    marketCap: "$45.678 Trilliun",
+    marketCapNumber: 45678000000000,
+    icon: "https://logo.clearbit.com/microsoft.com",
+    color: "bg-blue-600",
+    category: "Technology Stock",
+    type: "STOCK",
+    description:
+      "Microsoft Corporation is an American multinational technology corporation which produces computer software, consumer electronics, personal computers, and related services.",
+    volume24h: "$987 Billion",
+    high24h: "$7.000.000",
+    low24h: "$6.500.000",
+    sector: "Technology",
+    industry: "Software",
+    country: "United States",
+    exchange: "NASDAQ",
+    website: "https://www.microsoft.com",
+    employees: "221,000",
+    founded: "1975",
+    ceo: "Satya Nadella",
+  },
+  {
+    id: 5,
+    name: "Tesla Inc.",
+    symbol: "TSLA",
+    price: "$4.123.456",
+    priceNumber: 4123456,
+    change24h: -2.15,
+    change7d: 8.76,
+    change1m: -5.43,
+    change1y: 67.23,
+    marketCap: "$23.456 Trilliun",
+    marketCapNumber: 23456000000000,
+    icon: "https://logo.clearbit.com/tesla.com",
+    color: "bg-red-600",
+    category: "Automotive Stock",
+    type: "STOCK",
+    description:
+      "Tesla, Inc. is an American electric vehicle and clean energy company based in Austin, Texas.",
+    volume24h: "$2.345 Trilliun",
+    high24h: "$4.200.000",
+    low24h: "$4.000.000",
+    sector: "Automotive",
+    industry: "Electric Vehicles",
+    country: "United States",
+    exchange: "NASDAQ",
+    website: "https://www.tesla.com",
+    employees: "127,855",
+    founded: "2003",
+    ceo: "Elon Musk",
+  },
+];
 
-const ErrorDisplay: React.FC<{
-  error: string;
-  onRetry: () => void;
-  onBack: () => void;
-}> = ({ error, onRetry, onBack }) => (
-  <div className="text-center py-12">
-    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-      <span className="text-red-400 text-2xl">⚠</span>
-    </div>
-    <h2 className="text-xl font-bold text-white mb-2">Asset Not Found</h2>
-    <p className="text-gray-400 mb-6">{error}</p>
-    <div className="flex gap-4 justify-center">
-      <Button variant="secondary" onClick={onBack}>
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Trading
-      </Button>
-      <Button onClick={onRetry}>Try Again</Button>
-    </div>
-  </div>
-);
-
-const AssetDetailPage: React.FC = () => {
+const AssetDetails: React.FC = () => {
   const params = useParams();
   const router = useRouter();
-  const { isConnected } = useAccount();
-
   const symbol = params.symbol as string;
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [asset, setAsset] = useState<any>(null);
 
-  // Use the asset detail hook for basic asset information
-  const {
-    asset,
-    isLoading: isAssetLoading,
-    error: assetError,
-    refreshAssetData,
-  } = useAssetDetail(symbol);
+  useEffect(() => {
+    // Simulate API loading
+    const loadAsset = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-  // Use the trading hook for contract interactions
-  const tradingHook = useAssetTrading(asset?.tokenAddress);
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // Combine loading states
-  const isLoading = isAssetLoading || tradingHook.loading;
-  const error = assetError || tradingHook.error?.message;
+        // Find asset data
+        const foundAsset = mockTradingAssets.find(
+          (a) =>
+            a.symbol.toLowerCase() === symbol?.toLowerCase()
+        );
 
-  // Handle trade execution
-  const handleTradeExecute = async (
-    type: "buy" | "sell",
-    amount: number,
-    quantity: number
-  ) => {
-    if (!isConnected) {
-      alert("Please connect your wallet to trade");
-      return;
-    }
-
-    if (!asset?.tokenAddress) {
-      alert("Asset information not available");
-      return;
-    }
-
-    try {
-      if (type === "buy") {
-        await tradingHook.buyAssetTokens({
-          assetTokenAddress: asset.tokenAddress,
-          paymentAmount: amount.toString(),
-        });
-      } else {
-        await tradingHook.sellAssetTokens({
-          assetTokenAddress: asset.tokenAddress,
-          tokenAmount: quantity.toString(),
-        });
+        if (!foundAsset) {
+          setError("Asset not found");
+        } else {
+          setAsset(foundAsset);
+        }
+      } catch (err) {
+        setError("Failed to load asset data");
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      // Show success notification
-      alert(`${type === "buy" ? "Purchase" : "Sale"} completed successfully!`);
-    } catch (error) {
-      console.error(`Error executing ${type} trade:`, error);
-      alert(`Failed to execute ${type} trade. Please try again.`);
+    if (symbol) {
+      loadAsset();
     }
-  };
+  }, [symbol]);
 
-  // Navigation handlers
   const handleBackClick = () => {
-    router.push("/revamp/trading");
+    router.push("/trading");
   };
 
-  const handleRetry = () => {
-    refreshAssetData();
-    tradingHook.refreshBalances();
+  const handleRefresh = () => {
+    // Reload the page data
+    window.location.reload();
   };
 
-  // Calculate if approval is needed
-  const needsApproval =
-    isConnected &&
-    parseFloat(tradingHook.usdtAllowance.replace(/[^\d.-]/g, "")) === 0;
-
-  return (
-    <AuthWrapper requireAuth={true}>
-      <Layout>
-        <div className="container mx-auto px-6 py-6">
-          {/* Loading State */}
-          {isLoading && <LoadingSkeleton />}
-
-          {/* Error State */}
-          {error && !isLoading && (
-            <ErrorDisplay
-              error={error}
-              onRetry={handleRetry}
-              onBack={handleBackClick}
-            />
-          )}
-
-          {/* Main Content */}
-          {asset && !isLoading && !error && (
-            <>
-              {/* Asset Header */}
-              <AssetDetailHeader
-                asset={{
-                  name: asset.name,
-                  symbol: asset.symbol,
-                  price: asset.price,
-                  marketCap: asset.marketCapNumber?.toString() || "N/A",
-                  icon: asset.assetIcon,
-                  type: asset.assetType,
-                }}
-                onBackClick={handleBackClick}
-              />
-
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Main Chart Section */}
-                <div className="lg:col-span-3 space-y-6">
-                  {/* Price Chart */}
-                  <PriceChartWidget
-                    asset={{
-                      symbol: asset.symbol,
-                      type: asset.assetType,
-                    }}
-                  />
-
-                  {/* Market Information */}
-                  <MarketInformationPanel
-                    asset={{
-                      price: asset.price,
-                      high24h: asset.high24h || asset.price,
-                      low24h: asset.low24h || asset.price,
-                      marketCap: asset.marketCapNumber?.toString() || "N/A",
-                      volume24h: asset.volume24h,
-                    }}
-                  />
-
-                  {/* Stock Details (only for stocks) */}
-                  {asset.assetType === "STOCK" && (
-                    <StockDetailsPanel
-                      asset={{
-                        name: asset.name,
-                        symbol: asset.symbol,
-                        price: asset.price,
-                        change24h: asset.change24h || 0,
-                        high24h: asset.high24h || asset.price,
-                        low24h: asset.low24h || asset.price,
-                        marketCap: asset.marketCapNumber?.toString() || "N/A",
-                        sector: asset.sector,
-                        industry: asset.industry,
-                        category: asset.category,
-                        exchange: asset.exchange,
-                        country: asset.country,
-                        employees: asset.employees,
-                        founded: asset.founded,
-                        ceo: asset.ceo,
-                        website: asset.website,
-                      }}
-                    />
-                  )}
-                </div>
-
-                {/* Right Sidebar */}
-                <div className="space-y-6">
-                  {/* Trade Panel */}
-                  <TradePanelWidget
-                    asset={{
-                      symbol: asset.symbol,
-                      name: asset.name,
-                    }}
-                    balance={{
-                      usdt: tradingHook.usdtBalance,
-                      allowance: tradingHook.usdtAllowance,
-                    }}
-                    isTransactionPending={tradingHook.isTransactionPending}
-                    hasEnoughBalance={tradingHook.hasEnoughUSDTBalance}
-                    hasEnoughAllowance={tradingHook.hasEnoughUSDTAllowance}
-                    needsApproval={needsApproval}
-                    onApproveUSDT={tradingHook.approveUSDT}
-                    onTradeExecute={handleTradeExecute}
-                  />
-
-                  {/* Your Holdings */}
-                  <HoldingsPanel
-                    holdings={tradingHook.userHoldings}
-                    className={
-                      tradingHook.isHoldingsLoading ? "opacity-50" : ""
-                    }
-                  />
-
-                  {/* Status Cards */}
-                  <div className="space-y-3">
-                    {/* Transaction Status */}
-                    {tradingHook.isTransactionPending && (
-                      <div className="p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                          <span className="text-blue-400 text-sm font-medium">
-                            Transaction Pending...
-                          </span>
-                        </div>
-                        <p className="text-blue-300 text-xs mt-1">
-                          Please wait for the blockchain transaction to
-                          complete.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Transaction Success */}
-                    {tradingHook.isConfirmed && (
-                      <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-green-400 text-sm font-medium">
-                            ✅ Transaction Confirmed
-                          </span>
-                        </div>
-                        <p className="text-green-300 text-xs mt-1">
-                          Your trade has been successfully executed.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Connection Status */}
-                    {!isConnected && (
-                      <div className="p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-yellow-400 text-sm font-medium">
-                            Wallet Not Connected
-                          </span>
-                        </div>
-                        <p className="text-yellow-300 text-xs mt-1">
-                          Connect your wallet to trade and view your holdings.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Asset Support Status */}
-                    {asset && !tradingHook.isAssetTokenSupported && (
-                      <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-red-400 text-sm font-medium">
-                            Asset Not Tradeable
-                          </span>
-                        </div>
-                        <p className="text-red-300 text-xs mt-1">
-                          This asset is currently not available for trading.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+  // Loading State
+  if (isLoading) {
+    return (
+      <Layout theme="dark">
+        <PageHeader
+          title="Asset Details"
+          subtitle="Loading asset information..."
+          showBackButton
+          onBackClick={handleBackClick}
+          theme="dark"
+        />
+        <LoadingState
+          message="Loading asset details from blockchain..."
+          size="lg"
+        />
       </Layout>
-    </AuthWrapper>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <Layout theme="dark">
+        <PageHeader
+          title="Asset Details"
+          subtitle="Error loading asset"
+          showBackButton
+          onBackClick={handleBackClick}
+          theme="dark"
+        />
+        <ErrorState
+          type={error === "Asset not found" ? "404" : "generic"}
+          title={
+            error === "Asset not found"
+              ? "Asset Not Found"
+              : "Error Loading Asset"
+          }
+          message={
+            error === "Asset not found"
+              ? `The asset "${symbol}" could not be found in our database.`
+              : "Failed to load asset information. Please try again."
+          }
+          actions={[
+            {
+              label: "Back to Markets",
+              onClick: handleBackClick,
+              variant: "primary",
+              icon: <ArrowLeft className="w-4 h-4" />,
+            },
+            ...(error !== "Asset not found"
+              ? [
+                  {
+                    label: "Try Again",
+                    onClick: handleRefresh,
+                    variant: "secondary" as const,
+                  },
+                ]
+              : []),
+          ]}
+          size="lg"
+        />
+      </Layout>
+    );
+  }
+
+  // Empty State (fallback)
+  if (!asset) {
+    return (
+      <Layout theme="dark">
+        <PageHeader
+          title="Asset Details"
+          subtitle="No asset data available"
+          showBackButton
+          onBackClick={handleBackClick}
+          theme="dark"
+        />
+        <EmptyState
+          title="No Asset Data"
+          description="Unable to load asset information."
+          action={{
+            label: "Back to Markets",
+            onClick: handleBackClick,
+            variant: "primary",
+          }}
+          size="lg"
+        />
+      </Layout>
+    );
+  }
+
+  // Success State - Show Asset Details
+  return (
+    <Layout theme="dark">
+      {/* Page Header */}
+      <PageHeader
+        title={asset.name}
+        subtitle={`${asset.symbol} • ${
+          asset.type === "STOCK"
+            ? "Stock"
+            : asset.type === "CRYPTO"
+            ? "Crypto"
+            : "Commodity"
+        }`}
+        showBackButton
+        onBackClick={handleBackClick}
+        theme="dark"
+        breadcrumbs={[
+          { label: "Trading", onClick: () => router.push("/trading") },
+          { label: asset.name },
+        ]}
+        stats={[
+          {
+            label: "Current Price",
+            value: asset.price,
+          },
+          {
+            label: "24h Change",
+            value: `${asset.change24h > 0 ? "+" : ""}${asset.change24h.toFixed(
+              2
+            )}%`,
+          },
+          {
+            label: "Market Cap",
+            value: asset.marketCap,
+          },
+        ]}
+        actions={[
+          {
+            label: "Refresh",
+            onClick: handleRefresh,
+            variant: "ghost",
+          },
+        ]}
+      />
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Column - Charts and Info */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Line Chart */}
+          <LineChartWidget asset={asset} />
+
+          {/* Asset Information */}
+          <AssetInfo asset={asset} />
+
+          {/* News Section */}
+          <NewsSection asset={asset} />
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="space-y-6">
+          {/* Trade Panel */}
+          <TradePanel asset={asset} />
+
+          {/* Market Stats */}
+          <MarketStats asset={asset} />
+
+          {/* Performance Summary */}
+          <PerformanceSummary asset={asset} />
+        </div>
+      </div>
+    </Layout>
   );
 };
 
-export default AssetDetailPage;
+export default AssetDetails;
