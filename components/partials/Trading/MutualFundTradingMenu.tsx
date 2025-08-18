@@ -28,7 +28,7 @@ const MutualFundTradingMenu: React.FC<MutualFundTradingMenuProps> = ({
   } = useMutualFundInfo();
 
   const handleViewDetails = () => {
-    router.push("/trading/URIP");
+    router.push("/trading/mutual-fund");
   };
 
   // Calculate total allocation percentage
