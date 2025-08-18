@@ -211,8 +211,6 @@ const MutualFundPage: React.FC = () => {
             {[
               { id: "overview", label: "Overview", icon: BarChart3 },
               { id: "allocations", label: "Asset Allocations", icon: PieChart },
-              { id: "performance", label: "Performance", icon: TrendingUp },
-              { id: "history", label: "Transaction History", icon: Clock },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
