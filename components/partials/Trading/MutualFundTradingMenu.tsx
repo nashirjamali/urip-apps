@@ -4,6 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { PieChart, Info, ArrowRight, TrendingUp, Activity } from "lucide-react";
 import { useMutualFundInfo } from "@/hooks/contracts/useMutualFundInfo";
+import Image from "next/image";
 
 interface MutualFundTradingMenuProps {
   className?: string;
@@ -141,38 +142,43 @@ const MutualFundTradingMenu: React.FC<MutualFundTradingMenuProps> = ({
         {/* Asset Allocation List */}
         {!isLoadingAllocations && assetAllocations.length > 0 && (
           <div className="space-y-2">
-            {assetAllocations.map((allocation, index) => (
-              <div
-                key={allocation.tokenAddress}
-                className="flex items-center justify-between p-3 bg-gray-900/30 border border-gray-800 rounded-lg hover:bg-gray-800/30 transition-colors"
-              >
-                <div className="flex items-center">
-                  <div className="w-6 h-6 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-full flex items-center justify-center mr-3">
-                    <span className="text-white text-xs font-bold">
-                      {allocation.assetSymbol.charAt(
-                        allocation.assetSymbol.length - 1
-                      )}
-                    </span>
+            {assetAllocations.map((allocation, index) => {
+              return (
+                <div
+                  key={allocation.tokenAddress}
+                  className="flex items-center justify-between p-3 bg-gray-900/30 border border-gray-800 rounded-lg hover:bg-gray-800/30 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-6 h-6 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-full flex items-center justify-center mr-3">
+                      <span className="text-white text-xs font-bold">
+                        <Image
+                          src={allocation.assetIcon}
+                          alt={allocation.assetName}
+                          width={15}
+                          height={15}
+                        />
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">
+                        {allocation.assetName}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {allocation.assetSymbol} • ${allocation.assetPrice}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium text-white">
-                      {allocation.assetName}
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-[#F77A0E]">
+                      {allocation.percentage.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-400">
-                      {allocation.assetSymbol} • ${allocation.assetPrice}
+                      ${allocation.allocationBasisPoints.toFixed(0)}
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-[#F77A0E]">
-                    {allocation.percentage.toFixed(1)}%
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    ${allocation.allocationBasisPoints.toFixed(0)}
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -212,9 +218,8 @@ const MutualFundTradingMenu: React.FC<MutualFundTradingMenuProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div
-              className={`w-2 h-2 rounded-full mr-2 ${
-                mutualFundInfo?.isActive ? "bg-green-400" : "bg-red-400"
-              }`}
+              className={`w-2 h-2 rounded-full mr-2 ${mutualFundInfo?.isActive ? "bg-green-400" : "bg-red-400"
+                }`}
             ></div>
             <span className="text-xs text-gray-400">
               Fund Status: {mutualFundInfo?.isActive ? "Active" : "Inactive"}

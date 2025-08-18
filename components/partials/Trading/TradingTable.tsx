@@ -30,7 +30,7 @@ export const TradingTable: React.FC<TradingTableProps> = ({
   isLoading = false,
   theme = "dark",
 }) => {
-  
+
   const columns: TableColumn<TradingAsset>[] = [
     {
       key: "name",
@@ -38,35 +38,37 @@ export const TradingTable: React.FC<TradingTableProps> = ({
       sortable: true,
       align: "left",
       className: "min-w-[200px]",
-      render: (value, asset) => (
-        <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 overflow-hidden bg-white/10 group-hover:bg-[#F77A0E]/20 group-hover:scale-110 transition-all duration-200">
-            <img
-              src={asset.assetIcon}
-              alt={asset.name}
-              className="w-8 h-8 object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = "none";
-                const fallback = target.nextElementSibling as HTMLElement;
-                if (fallback) {
-                  fallback.textContent = asset.symbol.charAt(0);
-                  fallback.classList.remove("hidden");
-                }
-              }}
-            />
-            <span className="hidden text-white font-bold text-sm"></span>
-          </div>
-          <div>
-            <div className="text-sm font-medium text-white group-hover:text-[#F77A0E] transition-colors duration-200">
-              {asset.name}
+      render: (value, asset) => {
+        return (
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 overflow-hidden bg-white/10 group-hover:bg-[#F77A0E]/20 group-hover:scale-110 transition-all duration-200">
+              <img
+                src={asset.assetIcon}
+                alt={asset.name}
+                className="w-8 h-8 object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = "none";
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) {
+                    fallback.textContent = asset.symbol.charAt(0);
+                    fallback.classList.remove("hidden");
+                  }
+                }}
+              />
+              <span className="hidden text-white font-bold text-sm"></span>
             </div>
-            <div className="text-sm text-gray-400">
-              {asset.symbol} • {asset.assetType}
+            <div>
+              <div className="text-sm font-medium text-white group-hover:text-[#F77A0E] transition-colors duration-200">
+                {asset.name}
+              </div>
+              <div className="text-sm text-gray-400">
+                {asset.symbol} • {asset.assetType}
+              </div>
             </div>
           </div>
-        </div>
-      ),
+        );
+      }
     },
     {
       key: "price",

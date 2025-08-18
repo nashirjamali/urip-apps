@@ -133,6 +133,84 @@ const getMockCompanyData = (symbol: string, assetType: string) => {
       description:
         "Tesla, Inc. is an American electric vehicle and clean energy company based in Austin, Texas.",
     },
+    NVDA: {
+      sector: "Technology",
+      industry: "Semiconductors",
+      category: "Technology Stock",
+      exchange: "NASDAQ",
+      country: "United States",
+      employees: "29,600",
+      founded: "1993",
+      ceo: "Jensen Huang",
+      website: "https://www.nvidia.com",
+      description:
+        "NVIDIA Corporation is an American multinational technology company that designs graphics processing units (GPUs) for the gaming and professional markets, as well as system on a chip units (SoCs) for the mobile computing and automotive market.",
+    },
+    GOOGL: {
+      sector: "Technology",
+      industry: "Internet Content & Information",
+      category: "Technology Stock",
+      exchange: "NASDAQ",
+      country: "United States",
+      employees: "182,000",
+      founded: "1998",
+      ceo: "Sundar Pichai",
+      website: "https://www.google.com",
+      description:
+        "Alphabet Inc. is an American multinational technology conglomerate holding company headquartered in Mountain View, California. It was created through a restructuring of Google.",
+    },
+    BREN: {
+      sector: "Energy",
+      industry: "Renewable Energy",
+      category: "Energy Stock",
+      exchange: "IDX",
+      country: "Indonesia",
+      employees: "5,000",
+      founded: "2012",
+      ceo: "Pankaj Kumar",
+      website: "https://www.bren.co.id",
+      description:
+        "Barito Renewables Energy is an Indonesian renewable energy company focused on developing sustainable energy solutions and green technology.",
+    },
+    D05: {
+      sector: "Financial Services",
+      industry: "Banking",
+      category: "Financial Stock",
+      exchange: "SGX",
+      country: "Singapore",
+      employees: "48,000",
+      founded: "1968",
+      ceo: "Piyush Gupta",
+      website: "https://www.dbs.com",
+      description:
+        "DBS Group Holdings Ltd is a Singaporean multinational banking and financial services corporation headquartered in Marina Bay, Singapore.",
+    },
+    DELTA: {
+      sector: "Technology",
+      industry: "Electronics Manufacturing",
+      category: "Technology Stock",
+      exchange: "TPEx",
+      country: "Taiwan",
+      employees: "95,000",
+      founded: "1971",
+      ceo: "Yancey Hai",
+      website: "https://www.deltaww.com",
+      description:
+        "Delta Electronics Inc. is a Taiwanese electronics manufacturing company that specializes in power and thermal management solutions, automation, and infrastructure.",
+    },
+    MAYBANK: {
+      sector: "Financial Services",
+      industry: "Banking",
+      category: "Financial Stock",
+      exchange: "KLSE",
+      country: "Malaysia",
+      employees: "45,000",
+      founded: "1960",
+      ceo: "Dato' Khairussaleh Ramli",
+      website: "https://www.maybank.com",
+      description:
+        "Malayan Banking Berhad is a Malaysian universal bank, with the largest market capitalisation on Bursa Malaysia.",
+    },
     BTC: {
       category: "Cryptocurrency",
       description:
@@ -142,6 +220,18 @@ const getMockCompanyData = (symbol: string, assetType: string) => {
       category: "Cryptocurrency",
       description:
         "Ethereum is a decentralized platform that runs smart contracts and serves as the foundation for decentralized applications.",
+    },
+    XAU: {
+      sector: "Precious Metals",
+      category: "Commodity",
+      description:
+        "Gold is a precious metal that has been used as a store of value and medium of exchange for thousands of years. It's often considered a hedge against inflation and economic uncertainty.",
+    },
+    XAG: {
+      sector: "Precious Metals", 
+      category: "Commodity",
+      description:
+        "Silver is a precious metal widely used in jewelry, electronics, and industrial applications. It's also considered an investment vehicle and store of value.",
     },
   };
 
