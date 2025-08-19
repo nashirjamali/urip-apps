@@ -5,7 +5,7 @@ export const ASSET_ICONS: Record<string, string> = {
   tAAPL: "https://logo.clearbit.com/apple.com",
   tNVDA: "https://cdn-icons-png.flaticon.com/512/732/732230.png",
   tMSFT: "https://logo.clearbit.com/microsoft.com",
-  tGOOG: "https://logo.clearbit.com/google.com",
+  tGOOGL: "https://logo.clearbit.com/google.com",
   tD05: "https://companieslogo.com/img/orig/D05.SI-edfcd000.png?t=1720244491",
   tBREN: "https://www.barito-pacific.com/fe/assets/icons/favicon_barito1.png",
   tDELTA: "https://www.deltathailand.com/imgadmins/news/news_cover/DELTA_news_photo2019-02-27_15-17-12.jpg",
@@ -13,6 +13,8 @@ export const ASSET_ICONS: Record<string, string> = {
   tXAU: "https://cdn-icons-png.flaticon.com/512/2583/2583963.png",
   tXAG: "https://cdn-icons-png.flaticon.com/512/2583/2583967.png",
   tBTC: "https://cdn-icons-png.flaticon.com/512/5968/5968260.png",
+  tTSLA: "https://logo.clearbit.com/tesla.com",
+  tETH: "https://cdn-icons-png.flaticon.com/512/14446/14446160.png",
   DEFAULT: "/icons/assets/default-asset.svg",
 };
 
@@ -226,6 +228,44 @@ export const ASSET_DETAILS: Record<string, AssetDetailItem> = {
     foundedYear: 2009,
     latestNews: [],
   },
+  tTSLA: {
+    tokenAddress: "0x0000000000000000000000000000000000000000" as Address,
+    name: "Tokenized Tesla Stock",
+    symbol: "tTSLA",
+    price: "$250.00",
+    lastUpdated: new Date(),
+    assetType: "STOCK",
+    assetIcon: "https://logo.clearbit.com/tesla.com",
+    companyName: "Tesla, Inc.",
+    marketCap: "$800B",
+    website: "https://www.tesla.com",
+    industry: "Electric Vehicles",
+    country: "United States",
+    sharesOutstanding: "3.2B",
+    description:
+      "Tesla, Inc. is an American electric vehicle and clean energy company based in Austin, Texas. Tesla designs and manufactures electric vehicles, energy storage systems, and solar panels.",
+    foundedYear: 2003,
+    latestNews: [],
+  },
+  tETH: {
+    tokenAddress: "0x0000000000000000000000000000000000000000" as Address,
+    name: "Tokenized Ethereum",
+    symbol: "tETH",
+    price: "$3500.00",
+    lastUpdated: new Date(),
+    assetType: "CRYPTO",
+    assetIcon: "https://cdn-icons-png.flaticon.com/512/14446/14446160.png",
+    companyName: "Ethereum",
+    marketCap: "$420B",
+    website: "https://ethereum.org",
+    industry: "Cryptocurrency",
+    country: "Global",
+    sharesOutstanding: "120.3M ETH",
+    description:
+      "Ethereum is a decentralized platform that runs smart contracts and serves as the foundation for decentralized applications and the broader DeFi ecosystem.",
+    foundedYear: 2015,
+    latestNews: [],
+  },
 };
 
 export const NEWS_KEYWORDS: Record<string, string> = {
@@ -240,6 +280,8 @@ export const NEWS_KEYWORDS: Record<string, string> = {
   tXAU: "Gold precious metal commodity",
   tXAG: "Silver precious metal commodity",
   tBTC: "Bitcoin cryptocurrency BTC",
+  tTSLA: "Tesla stock TSLA electric vehicle",
+  tETH: "Ethereum cryptocurrency ETH",
 };
 
 export const NEWS_CONFIG = {

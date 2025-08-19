@@ -89,7 +89,7 @@ export const TopItems: React.FC<TopItemsProps> = ({
         <img
           src={item.image}
           alt={item.title}
-          className={cn("object-contain", sizeClasses[size].icon)}
+          className={cn("object-contain bg-white rounded", sizeClasses[size].icon)}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = "none";
@@ -133,53 +133,56 @@ export const TopItems: React.FC<TopItemsProps> = ({
           >
             <div
               className={cn(
-                "text-center border rounded-lg backdrop-blur-sm transition-all duration-200",
-                sizeClasses[size].container,
+                "text-center border rounded-lg backdrop-blur-sm transition-all duration-200 h-40 flex flex-col justify-between p-3",
                 themeClasses[theme].card
               )}
             >
-              <div
-                className={cn(
-                  "rounded-full flex items-center justify-center mx-auto mb-2 overflow-hidden bg-white/10 group-hover:bg-[#F77A0E]/20 group-hover:scale-110 transition-all duration-200",
-                  sizeClasses[size].icon
+              <div className="flex-1 flex flex-col justify-center">
+                <div
+                  className={cn(
+                    "rounded-full flex items-center justify-center mx-auto mb-2 overflow-hidden bg-white/10 group-hover:bg-[#F77A0E]/20 group-hover:scale-110 transition-all duration-200",
+                    sizeClasses[size].icon
+                  )}
+                >
+                  {renderIcon(item)}
+                  <span className="hidden font-bold"></span>
+                </div>
+                <h3
+                  className={cn(
+                    "font-semibold transition-colors duration-200",
+                    sizeClasses[size].itemTitle,
+                    themeClasses[theme].cardText
+                  )}
+                >
+                  {item.title}
+                </h3>
+                {item.subtitle && (
+                  <p
+                    className={cn(
+                      "mb-1 transition-colors duration-200",
+                      sizeClasses[size].itemSubtitle,
+                      themeClasses[theme].cardSubtext
+                    )}
+                  >
+                    {item.subtitle}
+                  </p>
                 )}
-              >
-                {renderIcon(item)}
-                <span className="hidden font-bold"></span>
+                {item.value && (
+                  <p
+                    className={cn(
+                      "mb-1 transition-colors duration-200",
+                      sizeClasses[size].itemSubtitle,
+                      themeClasses[theme].cardSubtext
+                    )}
+                  >
+                    {item.value}
+                  </p>
+                )}
               </div>
-              <h3
-                className={cn(
-                  "font-semibold transition-colors duration-200",
-                  sizeClasses[size].itemTitle,
-                  themeClasses[theme].cardText
-                )}
-              >
-                {item.title}
-              </h3>
-              {item.subtitle && (
-                <p
-                  className={cn(
-                    "mb-2 transition-colors duration-200",
-                    sizeClasses[size].itemSubtitle,
-                    themeClasses[theme].cardSubtext
-                  )}
-                >
-                  {item.subtitle}
-                </p>
-              )}
-              {item.value && (
-                <p
-                  className={cn(
-                    "mb-2 transition-colors duration-200",
-                    sizeClasses[size].itemSubtitle,
-                    themeClasses[theme].cardSubtext
-                  )}
-                >
-                  {item.value}
-                </p>
-              )}
               {showChange && item.change !== undefined && (
-                <ValueChange value={item.change} showIcon={false} size="sm" />
+                <div className="mt-auto">
+                  <ValueChange value={item.change} showIcon={false} size="sm" />
+                </div>
               )}
             </div>
           </div>

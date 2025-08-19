@@ -45,7 +45,7 @@ export const TradingTable: React.FC<TradingTableProps> = ({
               <img
                 src={asset.assetIcon}
                 alt={asset.name}
-                className="w-8 h-8 object-contain"
+                className="w-8 h-8 object-contain bg-white rounded"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";
