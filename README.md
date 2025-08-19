@@ -62,12 +62,12 @@ A modern, professional trading platform built with Next.js, featuring comprehens
 
 2. **Install dependencies**
    ```bash
-   pnpm install
+   yarn install
    ```
 
 3. **Run the development server**
    ```bash
-   pnpm dev
+   yarn dev
    ```
 
 4. **Open your browser**

@@ -364,3 +364,45 @@ html {
     }
   }
 }
+
+/* Custom URIP Revamp Animations */
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+  
+  /* Custom URIP gradient text */
+  .urip-gradient-text {
+    @apply bg-gradient-to-r from-[#F77A0E] to-[#E6690D] bg-clip-text text-transparent;
+  }
+  
+  /* Glass morphism effect */
+  .glass-effect {
+    @apply backdrop-blur-sm bg-white/10 border border-white/20;
+  }
+  
+  .glass-effect-light {
+    @apply backdrop-blur-sm bg-black/5 border border-black/10;
+  }
+  
+  /* Custom hover animations */
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-lg hover:shadow-[#F77A0E]/25;
+  }
+}
