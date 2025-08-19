@@ -150,7 +150,7 @@ const MutualFundTradingMenu: React.FC<MutualFundTradingMenuProps> = ({
                 >
                   <div className="flex items-center">
                     <div className="w-6 h-6 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-full flex items-center justify-center mr-3">
-                      <span className="text-white text-xs font-bold">
+                      <span className="text-white text-xs font-bold bg-white rounded-full p-1">
                         <Image
                           src={allocation.assetIcon}
                           alt={allocation.assetName}
