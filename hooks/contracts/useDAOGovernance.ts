@@ -188,7 +188,7 @@ export const useDAOGovernance = (): UseDAOGovernanceReturn => {
 
   // Format data for return
   const proposalCount = proposalCountRaw ? Number(proposalCountRaw) : 0;
-  const votingPower = votingPowerRaw ? formatUnits(votingPowerRaw as bigint, 18) : '0';
+  const votingPower = votingPowerRaw ? formatUnits(votingPowerRaw as bigint, 8) : '0';
 
   // Get proposals from the proposals hook
   const proposalListItems = proposalsHook.allProposals;

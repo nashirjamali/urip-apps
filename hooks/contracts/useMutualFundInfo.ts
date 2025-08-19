@@ -267,7 +267,7 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
 
   useEffect(() => {
     refreshAll();
-  }, [refreshAll]);
+  }, []);
 
   const totalAssets = useMemo(
     () => assetAllocations.length,

@@ -271,9 +271,9 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
     const totalInvestedAmount = userInvestmentInfo[2] as bigint; // totalInvestedAmount
     const profitLoss = userInvestmentInfo[3] as bigint; // profitLoss (signed)
 
-    const tokenAmount = parseFloat(formatUnits(tokenBalance, 18));
-    const usdValue = parseFloat(formatUnits(currentValue, 8)); // Assuming USD has 8 decimals
-    const investedAmount = parseFloat(formatUnits(totalInvestedAmount, 8));
+    const tokenAmount = parseFloat(formatUnits(tokenBalance, 8));
+    const usdValue = parseFloat(formatUnits(currentValue, 8));
+    const investedAmount = parseFloat(formatUnits(totalInvestedAmount, 6));
 
     if (tokenAmount === 0) return undefined;
 
@@ -297,7 +297,7 @@ export const useUserPortfolio = (): UseUserPortfolioReturn => {
       symbol: "URIP",
       assetType: "FUND",
       assetIcon: getAssetIcon("URIP", "FUND"),
-      investmentValueAmount: tokenAmount.toFixed(6),
+      investmentValueAmount: tokenAmount.toFixed(2),
       investmentValueUSD: usdValue.toFixed(2),
       currentPrice: navPerToken.toFixed(4),
       pnl,
