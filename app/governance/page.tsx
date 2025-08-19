@@ -1,26 +1,18 @@
 "use client";
 
 import type React from "react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { AuthWrapper } from "@/components/revamp/auth/AuthWrapper";
 import { Layout } from "@/components/ui/Layout";
 import { useAccount } from "wagmi";
 import { GovernanceHeader } from "@/components/partials/Governance/GovernanceHeader";
-import { ProposalFilter } from "@/components/partials/Governance/ProposalFilter";
 import { ProposalList } from "@/components/partials/Governance/ProposalList";
 import { ProposalDetails } from "@/components/partials/Governance/ProposalDetails";
 import { VotingResults } from "@/components/partials/Governance/VotingResults";
 import { VoteModal } from "@/components/partials/Governance/VoteModal";
-import type {
-  StatusFilterDAO,
-  UserVotesDAO,
-  VoteModalState,
-  DAO,
-} from "@/types";
-import { transformBlockchainProposal } from "@/lib/transformBlockchainProposal";
+import type { UserVotesDAO, VoteModalState, DAO } from "@/types";
 import { useDAOGovernance } from "@/hooks/contracts/useDAOGovernance";
-import { useSupportedAssets } from "@/hooks/contracts/useSupportedAssets";
-import { mockDAOs } from "@/constants/mockProposalsData";
+import { useDAOProposals } from "@/hooks/contracts/useDAOProposals";
 
 const GovernancePage: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -33,52 +25,55 @@ const GovernancePage: React.FC = () => {
     show: false,
     type: null,
   });
-  const [statusFilter, setStatusFilter] = useState<StatusFilterDAO>("All");
 
-  // Blockchain hooks
+  // Hooks
   const {
-    proposals: blockchainProposals,
-    proposalCount,
     votingPower,
-    isLoading,
-    error: daoError,
     castVote,
     getVoteStatus,
-    refreshAll,
+    error: governanceError,
   } = useDAOGovernance();
 
-  const { assetsList, isLoadingList, listError } = useSupportedAssets();
+  const {
+    activeProposals,
+    executedProposals,
+    isLoadingActive,
+    activeError,
+    refetchActiveProposals,
+  } = useDAOProposals();
 
-  // Transform blockchain data to UI format
-  const transformedProposals: DAO[] = useMemo(() => {
-    if (blockchainProposals && blockchainProposals.length > 0) {
-      return blockchainProposals.map((proposal) =>
-        transformBlockchainProposal(proposal, assetsList)
-      );
-    }
-    // Fallback to mock data for development/testing
-    return [];
-  }, [blockchainProposals, assetsList]);
+  // Transform DAOProposalListItem to DAO format for UI compatibility
+  const transformListItemToDAO = (item: any): DAO => ({
+    id: item.id.toString(),
+    title: item.title,
+    description: "", // Not available in list item
+    status: item.status,
+    endTime: item.endTime,
+    percentageAgree: item.percentageAgree,
+    percentageAgainst: item.percentageAgainst,
+    countParticipation: item.countParticipation,
+    assetAllocation: [], // Not available in list item
+    voters: [], // Not available in list item
+  });
 
-  // Filter proposals based on status
-  const filteredProposals = useMemo(() => {
-    if (statusFilter === "All") {
-      return transformedProposals;
-    }
-    return transformedProposals.filter((dao) => dao.status === statusFilter);
-  }, [transformedProposals, statusFilter]);
+  // Convert active proposals to DAO format
+  const transformedActiveProposals: DAO[] = activeProposals.map(
+    transformListItemToDAO
+  );
 
   // Check user's vote status for proposals
   useEffect(() => {
     const checkVoteStatuses = async () => {
-      if (!address || !transformedProposals.length) return;
+      if (!address || !activeProposals.length) return;
 
       const votes: UserVotesDAO = {};
-      for (const proposal of transformedProposals) {
+      for (const proposal of activeProposals) {
         try {
-          const voteStatus = await getVoteStatus(Number(proposal.id), address);
+          const voteStatus = await getVoteStatus(proposal.id, address);
           if (voteStatus?.hasVoted) {
-            votes[proposal.id] = voteStatus.voteChoice ? "agree" : "against";
+            votes[proposal.id.toString()] = voteStatus.voteChoice
+              ? "agree"
+              : "against";
           }
         } catch (error) {
           console.error(
@@ -90,8 +85,10 @@ const GovernancePage: React.FC = () => {
       setUserVotes(votes);
     };
 
-    checkVoteStatuses();
-  }, [address, transformedProposals, getVoteStatus]);
+    if (address && activeProposals.length > 0) {
+      checkVoteStatuses();
+    }
+  }, [address, activeProposals.length]);
 
   // Vote handling
   const handleVoteClick = (vote: "agree" | "against") => {
@@ -124,7 +121,7 @@ const GovernancePage: React.FC = () => {
 
       // Refresh data after voting
       setTimeout(() => {
-        refreshAll();
+        refetchActiveProposals();
       }, 2000);
     } catch (error) {
       console.error("Error casting vote:", error);
@@ -139,15 +136,24 @@ const GovernancePage: React.FC = () => {
 
   // Get selected proposal
   const selectedProposal =
-    transformedProposals.find((dao) => dao.id === selectedDAO) ||
-    transformedProposals[0];
+    transformedActiveProposals.find((dao) => dao.id === selectedDAO) ||
+    transformedActiveProposals[0];
 
   // Set default selection if proposals are loaded
   useEffect(() => {
-    if (transformedProposals.length > 0 && !selectedDAO) {
-      setSelectedDAO(transformedProposals[0].id);
+    if (
+      transformedActiveProposals.length > 0 &&
+      !transformedActiveProposals.find((p) => p.id === selectedDAO)
+    ) {
+      setSelectedDAO(transformedActiveProposals[0].id);
     }
-  }, [transformedProposals, selectedDAO]);
+  }, [transformedActiveProposals.length, selectedDAO]);
+
+  // Loading state
+  const isLoading = isLoadingActive;
+
+  // Error state
+  const error = activeError || governanceError;
 
   return (
     <AuthWrapper requireAuth={true}>
@@ -156,25 +162,37 @@ const GovernancePage: React.FC = () => {
           <GovernanceHeader />
 
           {/* Loading State */}
-          {(isLoading || isLoadingList) && (
+          {isLoading && (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F77A0E] mx-auto"></div>
-              <p className="text-gray-400 mt-4">Loading governance data...</p>
+              <p className="text-gray-400 mt-4">Loading active proposals...</p>
             </div>
           )}
 
           {/* Error State */}
-          {(daoError || listError) && (
+          {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
               <p className="text-red-400">
-                Error loading governance data: {daoError?.message}
+                Error loading governance data: {error.toString()}
               </p>
               <button
-                onClick={refreshAll}
+                onClick={refetchActiveProposals}
                 className="mt-2 text-sm text-red-300 hover:text-red-200 underline"
               >
                 Try again
               </button>
+            </div>
+          )}
+
+          {/* No Active Proposals */}
+          {!isLoading && transformedActiveProposals.length === 0 && (
+            <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-8 mb-6 text-center">
+              <h3 className="text-lg font-semibold text-gray-300 mb-2">
+                No Active Proposals
+              </h3>
+              <p className="text-gray-400">
+                There are currently no active proposals available for voting.
+              </p>
             </div>
           )}
 
@@ -198,35 +216,43 @@ const GovernancePage: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Proposals List */}
-            <div className="lg:col-span-1 space-y-6">
-              <ProposalFilter
-                statusFilter={statusFilter}
-                onFilterChange={setStatusFilter}
-              />
-
-              <ProposalList
-                proposals={filteredProposals}
-                selectedProposal={selectedDAO}
-                onProposalSelect={setSelectedDAO}
-                statusFilter={statusFilter}
-              />
+          {/* Active Proposals Count */}
+          {transformedActiveProposals.length > 0 && (
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-6">
+              <p className="text-green-400">
+                Showing {transformedActiveProposals.length} active proposal
+                {transformedActiveProposals.length !== 1 ? "s" : ""}
+              </p>
             </div>
+          )}
 
-            {/* Proposal Details */}
-            {selectedProposal && (
-              <div className="lg:col-span-2 space-y-6">
-                <ProposalDetails
-                  proposal={selectedProposal}
-                  userVotes={userVotes}
-                  onVoteClick={handleVoteClick}
+          {/* Main Content - Only show if there are active proposals */}
+          {transformedActiveProposals.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Proposals List */}
+              <div className="lg:col-span-1 space-y-6">
+                <ProposalList
+                  proposals={transformedActiveProposals}
+                  selectedProposal={selectedDAO}
+                  onProposalSelect={setSelectedDAO}
+                  statusFilter="All"
                 />
-
-                <VotingResults proposal={selectedProposal} />
               </div>
-            )}
-          </div>
+
+              {/* Proposal Details */}
+              {selectedProposal && (
+                <div className="lg:col-span-2 space-y-6">
+                  <ProposalDetails
+                    proposal={selectedProposal}
+                    userVotes={userVotes}
+                    onVoteClick={handleVoteClick}
+                  />
+
+                  <VotingResults proposal={selectedProposal} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Vote Modal */}

@@ -8,14 +8,6 @@ import {
 } from "@/lib/transformBlockchainProposal";
 import { DAO } from "@/types";
 
-interface AssetAllocation {
-  name: string;
-  symbol: string;
-  percentage: number;
-  icon: string;
-  detail: string;
-}
-
 interface ProposalDetailsProps {
   proposal: DAO;
   userVotes: { [key: string]: "agree" | "against" | null };
@@ -27,6 +19,8 @@ export const ProposalDetails: React.FC<ProposalDetailsProps> = ({
   userVotes,
   onVoteClick,
 }) => {
+  console.log("proposal", proposal);
+  
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold text-white">Proposal Details</h2>

@@ -36,9 +36,9 @@ const calculatePercentages = (forVotes: bigint, againstVotes: bigint) => {
  * Helper function to get status label
  */
 const getStatusLabel = (status: ProposalStatus): string => {
+  console.log(status);
+
   switch (status) {
-    case ProposalStatus.PENDING:
-      return "Pending";
     case ProposalStatus.ACTIVE:
       return "Active";
     case ProposalStatus.SUCCEEDED:
@@ -49,8 +49,6 @@ const getStatusLabel = (status: ProposalStatus): string => {
       return "Executed";
     case ProposalStatus.CANCELLED:
       return "Cancelled";
-    case ProposalStatus.EXPIRED:
-      return "Expired";
     default:
       return "Unknown";
   }
@@ -166,7 +164,6 @@ export const useDAOProposals = (): UseDAOProposalsReturn => {
       const active = proposalListItems.filter(
         (p) =>
           p.statusCode === ProposalStatus.ACTIVE ||
-          p.statusCode === ProposalStatus.PENDING ||
           p.statusCode === ProposalStatus.SUCCEEDED
       );
 
@@ -174,8 +171,7 @@ export const useDAOProposals = (): UseDAOProposalsReturn => {
         (p) =>
           p.statusCode === ProposalStatus.EXECUTED ||
           p.statusCode === ProposalStatus.DEFEATED ||
-          p.statusCode === ProposalStatus.CANCELLED ||
-          p.statusCode === ProposalStatus.EXPIRED
+          p.statusCode === ProposalStatus.CANCELLED
       );
 
       setAllProposals(proposalListItems);
@@ -245,7 +241,7 @@ export const useDAOProposals = (): UseDAOProposalsReturn => {
   const refetchActiveProposals = useCallback(() => {
     refetchActiveIds();
     fetchActiveProposals();
-  }, [refetchActiveIds, fetchActiveProposals]);
+  }, []);
 
   const refetchExecutedProposals = useCallback(() => {
     fetchAllProposals();

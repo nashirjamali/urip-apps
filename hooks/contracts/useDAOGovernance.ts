@@ -176,7 +176,7 @@ export const useDAOGovernance = (): UseDAOGovernanceReturn => {
     refetchVotingPower();
     votingHook.refreshVotingPower();
     proposalsHook.refetchAll();
-  }, [refetchProposalCount, refetchVotingPower, votingHook, proposalsHook]);
+  }, []);
 
   /**
    * Reset transaction states

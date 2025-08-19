@@ -1,13 +1,11 @@
 import { Address } from "viem";
 
 export enum ProposalStatus {
-  PENDING = 0,
-  ACTIVE = 1,
-  SUCCEEDED = 2,
-  DEFEATED = 3,
-  EXECUTED = 4,
-  CANCELLED = 5,
-  EXPIRED = 6,
+  ACTIVE = 0,
+  SUCCEEDED = 1,
+  DEFEATED = 2,
+  EXECUTED = 3,
+  CANCELLED = 4,
 }
 
 export enum VoteType {
