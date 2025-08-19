@@ -88,7 +88,7 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
         tokenPricePerURIP: formatUnits(navPerToken, 18),
         nav: formatUnits(currentNAV, 18),
         totalAssetValue: formatUnits(totalAssetValue, 8),
-        totalTokens: formatUnits(totalSupply, 18),
+        totalTokens: formatUnits(totalSupply, 8),
         managementFee: Number(managementFee),
         lastNavUpdate: formatLastUpdated(lastNavUpdate),
         isActive,
