@@ -45,26 +45,32 @@ export const VotingResults: React.FC<VotingResultsProps> = ({ proposal }) => {
       )}
 
       <div className="space-y-3">
-        {proposal.voters?.map((voter, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
-          >
-            <div>
-              <p className="font-medium text-white text-sm">{voter.address}</p>
-              <p className="text-xs text-gray-400">{voter.reason}</p>
-            </div>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                voter.vote === "Agree"
-                  ? "bg-green-500/20 text-green-400"
-                  : "bg-red-500/20 text-red-400"
-              }`}
+        {proposal.voters && proposal.voters.length > 0 ? (
+          proposal.voters.map((voter, index) => (
+            <div
+              key={`${voter.address}-${index}`}
+              className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
             >
-              {voter.vote}
-            </span>
+              <div>
+                <p className="font-medium text-white text-sm">{voter.address}</p>
+                <p className="text-xs text-gray-400">{voter.reason}</p>
+              </div>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  voter.vote === "Agree"
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-red-500/20 text-red-400"
+                }`}
+              >
+                {voter.vote}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-gray-400 text-sm">No votes cast yet</p>
           </div>
-        ))}
+        )}
       </div>
     </GlassCard>
   );
