@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PrimaryLayout } from "@/components/revamp/layout/PrimaryLayout";
 import { Header } from "@/components/revamp/layout/Header";
 import { Footer } from "@/components/revamp/layout/Footer";
@@ -71,6 +72,7 @@ const mockMutualFund = {
 };
 
 const PortfolioPage: React.FC = () => {
+  const router = useRouter();
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1M");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -95,7 +97,7 @@ const PortfolioPage: React.FC = () => {
   };
 
   const handleViewMutualFund = () => {
-    alert("Viewing mutual fund details");
+    router.push("/trading/mutual-fund");
   };
 
   const timeframes = ["1D", "1W", "1M", "3M", "1Y", "ALL"];
