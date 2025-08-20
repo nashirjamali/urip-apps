@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useAccount } from "wagmi";
 import { readContract } from "@wagmi/core";
 import { Address, formatUnits } from "viem";
@@ -29,6 +29,9 @@ const formatLastUpdated = (timestamp: bigint): string => {
  */
 export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
   const { address } = useAccount();
+  
+  // Use ref to prevent multiple simultaneous calls
+  const isFetchingRef = useRef(false);
 
   const [mutualFundInfo, setMutualFundInfo] = useState<MutualFundInfo | null>(
     null
@@ -42,6 +45,7 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
   const [allocationsError, setAllocationsError] = useState<string | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
+  // ✅ Fixed: Remove dependencies that cause circular updates
   const fetchFundInfo = useCallback(async () => {
     setIsLoadingFund(true);
     setFundError(null);
@@ -94,10 +98,6 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
         isActive,
       };
 
-      setMutualFundInfo((prev) =>
-        prev ? { ...prev, ...basicFundInfo } : null
-      );
-
       return basicFundInfo;
     } catch (error) {
       console.error("Error fetching fund info:", error);
@@ -108,7 +108,7 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
     } finally {
       setIsLoadingFund(false);
     }
-  }, []);
+  }, []); // ✅ Fixed: No dependencies
 
   const fetchAssetAllocations = useCallback(async () => {
     setIsLoadingAllocations(true);
@@ -162,50 +162,47 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
                 }),
               ]);
 
-            const assetName = nameResult as string;
-            const assetSymbol = symbolResult as string;
-            const [priceRaw, lastUpdate] = priceResult as [bigint, bigint];
-            const [, assetType, , , isActive] = assetInfoResult as [
-              string,
-              string,
-              bigint,
-              bigint,
-              boolean
-            ];
+            const [currentPrice, lastPriceUpdate] = priceResult as [bigint, bigint];
+            const [
+              assetSymbol,
+              assetType,
+              description,
+              isActive,
+              lastInfoUpdate,
+            ] = assetInfoResult as [string, string, string, boolean, bigint];
 
-            const allocationBasisPoints = Number(allocations[index]);
-            const percentage = allocationBasisPoints / 100;
+            const allocation = Number(allocations[index]);
+            const percentage = (allocation / 10000) * 100;
+            const allocationBasisPoints = allocation;
 
             const assetAllocation: AssetAllocation = {
               tokenAddress: assetAddress,
+              assetSymbol: symbolResult as string,
+              assetName: nameResult as string,
+              assetType,
+              assetPrice: formatUnits(currentPrice, 8),
+              lastUpdated: formatLastUpdated(lastPriceUpdate),
               percentage,
-              assetName,
-              assetSymbol,
-              assetPrice: formatUnits(priceRaw, 8),
-              assetIcon: getAssetIcon(assetSymbol, assetType),
               allocationBasisPoints,
               isActive,
-              assetType,
-              lastUpdated: formatLastUpdated(lastUpdate),
+              assetIcon: getAssetIcon(symbolResult as string, assetType),
             };
 
             return assetAllocation;
-          } catch (assetError) {
-            console.error(
-              `Error fetching details for asset ${index}:`,
-              assetError
-            );
+          } catch (error) {
+            console.error(`Error fetching details for asset ${assetAddress}:`, error);
             return null;
           }
         }
       );
 
-      const assetDetails = (await Promise.all(assetDetailsPromises)).filter(
-        (asset): asset is AssetAllocation => asset !== null
+      const assetAllocationsResolved = await Promise.all(assetDetailsPromises);
+      const validAllocations = assetAllocationsResolved.filter(
+        (allocation): allocation is AssetAllocation => allocation !== null
       );
 
-      setAssetAllocations(assetDetails);
-      return assetDetails;
+      setAssetAllocations(validAllocations);
+      return validAllocations;
     } catch (error) {
       console.error("Error fetching asset allocations:", error);
       setAllocationsError(
@@ -217,8 +214,9 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
     } finally {
       setIsLoadingAllocations(false);
     }
-  }, []);
+  }, []); // ✅ Fixed: No dependencies
 
+  // ✅ Fixed: Separate function to update fund info without circular dependencies
   const updateMutualFundInfo = useCallback(
     (basicInfo: any, allocations: AssetAllocation[]) => {
       if (!basicInfo) return;
@@ -239,35 +237,98 @@ export const useMutualFundInfo = (): UseMutualFundInfoReturn => {
     []
   );
 
+  // ✅ Fixed: Remove state dependencies to prevent circular updates
   const refreshFund = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    
     const basicInfo = await fetchFundInfo();
-    if (basicInfo && assetAllocations.length > 0) {
-      updateMutualFundInfo(basicInfo, assetAllocations);
+    if (basicInfo) {
+      // Get current allocations from state instead of depending on it
+      setMutualFundInfo(prev => {
+        if (!prev) return null;
+        return { ...prev, ...basicInfo };
+      });
     }
-  }, [fetchFundInfo, assetAllocations, updateMutualFundInfo]);
+  }, [fetchFundInfo]);
 
   const refreshAllocations = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    
     const allocations = await fetchAssetAllocations();
-    if (mutualFundInfo && allocations.length > 0) {
-      updateMutualFundInfo(mutualFundInfo, allocations);
+    if (allocations.length > 0) {
+      // Update allocations and recalculate fund info
+      setMutualFundInfo(prev => {
+        if (!prev) return null;
+        
+        const totalAllocationPercentage = allocations.reduce(
+          (total, allocation) => total + allocation.percentage,
+          0
+        );
+
+        return {
+          ...prev,
+          assetAllocations: allocations,
+          totalAllocationPercentage,
+        };
+      });
     }
-  }, [fetchAssetAllocations, mutualFundInfo, updateMutualFundInfo]);
+  }, [fetchAssetAllocations]);
 
+  // ✅ Fixed: Main refresh function with proper race condition handling
   const refreshAll = useCallback(async () => {
-    const [basicInfo, allocations] = await Promise.all([
-      fetchFundInfo(),
-      fetchAssetAllocations(),
-    ]);
+    if (isFetchingRef.current) return;
+    
+    isFetchingRef.current = true;
+    
+    try {
+      const [basicInfo, allocations] = await Promise.all([
+        fetchFundInfo(),
+        fetchAssetAllocations(),
+      ]);
 
-    if (basicInfo) {
-      updateMutualFundInfo(basicInfo, allocations);
-      setLastFetched(new Date());
+      if (basicInfo) {
+        updateMutualFundInfo(basicInfo, allocations);
+        setLastFetched(new Date());
+      }
+    } catch (error) {
+      console.error("Error in refreshAll:", error);
+    } finally {
+      isFetchingRef.current = false;
     }
   }, [fetchFundInfo, fetchAssetAllocations, updateMutualFundInfo]);
 
+  // ✅ Fixed: Only run once on mount, no dependencies on refreshAll
   useEffect(() => {
-    refreshAll();
-  }, []);
+    let mounted = true;
+    
+    const initialLoad = async () => {
+      if (isFetchingRef.current) return;
+      
+      isFetchingRef.current = true;
+      
+      try {
+        const [basicInfo, allocations] = await Promise.all([
+          fetchFundInfo(),
+          fetchAssetAllocations(),
+        ]);
+
+        if (mounted && basicInfo) {
+          updateMutualFundInfo(basicInfo, allocations);
+          setLastFetched(new Date());
+        }
+      } catch (error) {
+        console.error("Error in initial load:", error);
+      } finally {
+        isFetchingRef.current = false;
+      }
+    };
+
+    initialLoad();
+
+    return () => {
+      mounted = false;
+    };
+  }, []); // ✅ Fixed: Empty dependency array
 
   const totalAssets = useMemo(
     () => assetAllocations.length,
