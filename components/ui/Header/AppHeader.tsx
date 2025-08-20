@@ -6,6 +6,8 @@ import { Button } from "../button";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ConnectButton } from "@xellar/kit";
+import { WalletDropdown } from "../WalletDropdown";
+import { useDisconnect } from "wagmi";
 
 interface NavItem {
   label: string;
@@ -33,6 +35,7 @@ const NavItems: NavItem[] = [
 
 export default function AppHeader() {
   const router = useRouter();
+  const { disconnect } = useDisconnect();
 
   const handleTradingClick = () => {
     router.push("/trading");
@@ -62,25 +65,7 @@ export default function AppHeader() {
           ))}
         </div>
         <div className="flex items-center space-x-3">
-          <ConnectButton.Custom>
-            {({
-              openConnectModal,
-              disconnect,
-              isConnected,
-              openChainModal,
-              openProfileModal,
-              account,
-              chain,
-            }) => (
-              <Button
-                onClick={isConnected ? disconnect : () => {} }
-                size="sm"
-                className="border-white/40 text-gray-300 hover:bg-white/20 hover:text-white backdrop-filter backdrop-blur-sm bg-white/10 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl border-2"
-              >
-                Disconnect
-              </Button>
-            )}
-          </ConnectButton.Custom>
+          <WalletDropdown onDisconnect={disconnect} />
         </div>
       </div>
     </nav>
