@@ -35,7 +35,7 @@ const PortfolioPage: React.FC = () => {
 
   const transformedAssets: Asset[] = useMemo(() => {
     if (!portfolioData?.directAssets) return [];
-
+    console.log(portfolioData.directAssets, 'line 185');
     return portfolioData.directAssets.map((asset) => ({
       tokenAddress: asset.tokenAddress,
       name: asset.name,
@@ -125,7 +125,7 @@ const PortfolioPage: React.FC = () => {
   };
 
   const handleViewMutualFund = () => {
-    console.log("View mutual fund details");
+    router.push("/trading/mutual-fund");
   };
 
   const formatLastFetched = () => {

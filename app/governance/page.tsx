@@ -13,6 +13,7 @@ import { VoteModal } from "@/components/partials/Governance/VoteModal";
 import type { UserVotesDAO, VoteModalState, DAO } from "@/types";
 import { useDAOGovernance } from "@/hooks/contracts/useDAOGovernance";
 import { useDAOProposals } from "@/hooks/contracts/useDAOProposals";
+import { useMockVotingStore } from "@/stores/useMockVotingStore";
 
 const GovernancePage: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -25,6 +26,7 @@ const GovernancePage: React.FC = () => {
     show: false,
     type: null,
   });
+  const [isSubmittingVote, setIsSubmittingVote] = useState<boolean>(false);
 
   // Hooks
   const {
@@ -42,6 +44,14 @@ const GovernancePage: React.FC = () => {
     refetchActiveProposals,
   } = useDAOProposals();
 
+  // Mock voting store
+  const { 
+    proposals: mockProposals, 
+    castVote: mockCastVote, 
+    getUserVote,
+    getProposal 
+  } = useMockVotingStore();
+
   // Transform DAOProposalListItem to DAO format for UI compatibility
   const transformListItemToDAO = (item: any): DAO => ({
     id: item.id.toString(),
@@ -56,39 +66,22 @@ const GovernancePage: React.FC = () => {
     voters: [], // Not available in list item
   });
 
-  // Convert active proposals to DAO format
-  const transformedActiveProposals: DAO[] = activeProposals.map(
-    transformListItemToDAO
-  );
+  // Use mock proposals instead of blockchain data
+  const transformedActiveProposals: DAO[] = mockProposals.filter(p => p.status === "Active");
 
-  // Check user's vote status for proposals
+  // Check user's vote status for proposals using mock store
   useEffect(() => {
-    const checkVoteStatuses = async () => {
-      if (!address || !activeProposals.length) return;
+    if (!address || !transformedActiveProposals.length) return;
 
-      const votes: UserVotesDAO = {};
-      for (const proposal of activeProposals) {
-        try {
-          const voteStatus = await getVoteStatus(proposal.id, address);
-          if (voteStatus?.hasVoted) {
-            votes[proposal.id.toString()] = voteStatus.voteChoice
-              ? "agree"
-              : "against";
-          }
-        } catch (error) {
-          console.error(
-            `Error checking vote status for proposal ${proposal.id}:`,
-            error
-          );
-        }
+    const votes: UserVotesDAO = {};
+    for (const proposal of transformedActiveProposals) {
+      const userVote = getUserVote(proposal.id);
+      if (userVote) {
+        votes[proposal.id] = userVote;
       }
-      setUserVotes(votes);
-    };
-
-    if (address && activeProposals.length > 0) {
-      checkVoteStatuses();
     }
-  }, [address, activeProposals.length]);
+    setUserVotes(votes);
+  }, [address, transformedActiveProposals.length, getUserVote]);
 
   // Vote handling
   const handleVoteClick = (vote: "agree" | "against") => {
@@ -110,22 +103,50 @@ const GovernancePage: React.FC = () => {
       return;
     }
 
+    setIsSubmittingVote(true);
+
     try {
+      // First trigger MetaMask transaction (this will open MetaMask)
       const support = showVoteModal.type === "agree";
+      console.log("Opening MetaMask for voting transaction...");
       await castVote(Number(selectedDAO), support, voteComment);
+
+      console.log("MetaMask transaction successful, updating mock data...");
+      // After MetaMask transaction is successful, update mock data
+      mockCastVote(selectedDAO, showVoteModal.type, voteComment, address);
 
       // Update local state
       setUserVotes((prev) => ({ ...prev, [selectedDAO]: showVoteModal.type! }));
       setVoteComment("");
       setShowVoteModal({ show: false, type: null });
 
-      // Refresh data after voting
-      setTimeout(() => {
-        refetchActiveProposals();
-      }, 2000);
-    } catch (error) {
+      // Show success message
+      alert("Vote cast successfully! Check the Recent Voters section.");
+    } catch (error: any) {
       console.error("Error casting vote:", error);
-      alert("Failed to cast vote. Please try again.");
+      
+      // If MetaMask transaction fails, still allow mock voting for testing
+      if (error?.message?.includes("User rejected") || 
+          error?.message?.includes("denied") || 
+          error?.message?.includes("rejected") ||
+          error?.code === 4001) {
+        
+        const continueWithMock = confirm("MetaMask transaction was rejected. Would you like to continue with mock voting for testing purposes?");
+        
+        if (continueWithMock) {
+          console.log("User chose to continue with mock voting...");
+          // Still update mock data even if MetaMask was rejected (for testing purposes)
+          mockCastVote(selectedDAO, showVoteModal.type, voteComment, address);
+          setUserVotes((prev) => ({ ...prev, [selectedDAO]: showVoteModal.type! }));
+          setVoteComment("");
+          setShowVoteModal({ show: false, type: null });
+          alert("Mock vote cast successfully! Check the Recent Voters section.");
+        }
+      } else {
+        alert("Failed to cast vote. Please try again.");
+      }
+    } finally {
+      setIsSubmittingVote(false);
     }
   };
 
@@ -149,11 +170,11 @@ const GovernancePage: React.FC = () => {
     }
   }, [transformedActiveProposals.length, selectedDAO]);
 
-  // Loading state
-  const isLoading = isLoadingActive;
+  // Loading state (mock data loads instantly)
+  const isLoading = false;
 
-  // Error state
-  const error = activeError || governanceError;
+  // Error state (no errors with mock data)
+  const error = null;
 
   return (
     <AuthWrapper requireAuth={true}>
@@ -173,14 +194,8 @@ const GovernancePage: React.FC = () => {
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
               <p className="text-red-400">
-                Error loading governance data: {error.toString()}
+                Error loading governance data: {String(error)}
               </p>
-              <button
-                onClick={refetchActiveProposals}
-                className="mt-2 text-sm text-red-300 hover:text-red-200 underline"
-              >
-                Try again
-              </button>
             </div>
           )}
 
@@ -263,6 +278,7 @@ const GovernancePage: React.FC = () => {
           onCommentChange={setVoteComment}
           onSubmit={handleSubmitVote}
           onCancel={handleCancelVote}
+          isSubmitting={isSubmittingVote}
         />
       </Layout>
     </AuthWrapper>

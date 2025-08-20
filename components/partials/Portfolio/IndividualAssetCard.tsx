@@ -4,6 +4,8 @@ import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import { ASSET_ICONS } from "@/constants/assets";
+import Image from "next/image";
 
 interface Asset {
   tokenAddress: string;
@@ -29,14 +31,21 @@ export const IndividualAssetCard: React.FC<IndividualAssetCardProps> = ({
   onViewDetails,
   className = "",
 }) => {
+  console.log(asset, 'line 32');
   return (
     <Card className={`bg-gray-900/70 border-gray-600/50 ${className}`}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-xl flex items-center justify-center text-2xl">
+            {/* <div className="w-12 h-12 bg-gradient-to-br from-[#F77A0E] to-[#E6690D] rounded-xl flex items-center justify-center text-2xl">
               {asset.icon}
-            </div>
+            </div> */}
+            <Image
+              src={ASSET_ICONS[asset.symbol] || ASSET_ICONS.DEFAULT}
+              alt={asset.name}
+              width={48}
+              height={48}
+            />
             <div>
               <h3 className="font-semibold text-white">{asset.name}</h3>
               <p className="text-sm text-gray-400">
@@ -58,9 +67,8 @@ export const IndividualAssetCard: React.FC<IndividualAssetCardProps> = ({
           <div>
             <p className="text-sm text-gray-400">P&L</p>
             <p
-              className={`font-semibold ${
-                asset.isProfitable ? "text-green-400" : "text-red-400"
-              }`}
+              className={`font-semibold ${asset.isProfitable ? "text-green-400" : "text-red-400"
+                }`}
             >
               {asset.pnlAmount} ({asset.pnl})
             </p>

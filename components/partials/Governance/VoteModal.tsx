@@ -10,6 +10,7 @@ interface VoteModalProps {
   onCommentChange: (comment: string) => void;
   onSubmit: () => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
 export const VoteModal: React.FC<VoteModalProps> = ({
@@ -19,6 +20,7 @@ export const VoteModal: React.FC<VoteModalProps> = ({
   onCommentChange,
   onSubmit,
   onCancel,
+  isSubmitting = false,
 }) => {
   if (!show) return null;
 
@@ -36,6 +38,22 @@ export const VoteModal: React.FC<VoteModalProps> = ({
           Please provide a reason for your vote. This will be publicly visible
           to other participants.
         </p>
+        
+        {!isSubmitting && (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+            <p className="text-blue-400 text-sm">
+              📱 MetaMask will open to confirm your vote transaction
+            </p>
+          </div>
+        )}
+        
+        {isSubmitting && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+            <p className="text-yellow-400 text-sm">
+              🔄 Waiting for MetaMask confirmation...
+            </p>
+          </div>
+        )}
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -61,6 +79,7 @@ export const VoteModal: React.FC<VoteModalProps> = ({
             theme="dark"
             onClick={onCancel}
             className="flex-1"
+            disabled={isSubmitting}
           >
             Cancel
           </ActionButton>
@@ -69,13 +88,19 @@ export const VoteModal: React.FC<VoteModalProps> = ({
             size="md"
             theme="dark"
             onClick={onSubmit}
+            disabled={isSubmitting}
             className={`flex-1 ${
               voteType === "agree"
                 ? "bg-green-600 hover:bg-green-700"
                 : "bg-red-600 hover:bg-red-700"
-            }`}
+            } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {voteType === "agree" ? (
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                {voteType === "agree" ? "Submitting..." : "Submitting..."}
+              </>
+            ) : voteType === "agree" ? (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Submit Agree
